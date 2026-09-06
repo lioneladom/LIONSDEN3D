@@ -52,3 +52,21 @@
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
 }
+
+/* Hide Clerk Development Mode Badges & Watermarks for clean production look */
+.cl-development-badge,
+.cl-internal-b3fm6y,
+[class*="developmentBadge"],
+[class*="cl-development-badge"],
+[data-localization-key="developmentMode"],
+.cl-badge[data-variant="development"] {
+  display: none !important;
+  visibility: hidden !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+  height: 0 !important;
+  width: 0 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  overflow: hidden !important;
+}

@@ -16,10 +16,20 @@ export const clerkTheme = {
     borderRadius: '0.75rem',
     fontFamily: 'system-ui, -apple-system, sans-serif',
   },
+  layout: {
+    socialButtonsPlacement: 'top' as const,
+    socialButtonsVariant: 'blockButton' as const,
+    showOptionalFields: false,
+  },
   elements: {
     card: 'border border-[#262626] bg-[#0F0F0F] shadow-2xl shadow-black/90',
     formButtonPrimary:
       'bg-[#E10600] hover:bg-[#FF1A1A] text-white font-semibold shadow-lg shadow-red-950/40 transition-all',
+    socialButtonsBlockButton:
+      'border border-neutral-700 bg-[#161616] hover:bg-neutral-800 text-white font-medium transition-colors hover:border-neutral-500',
+    socialButtonsBlockButtonText: 'text-white font-medium text-xs',
+    dividerLine: 'bg-neutral-800',
+    dividerText: 'text-neutral-500 text-xs font-mono uppercase tracking-wider',
     footerActionLink: 'text-[#E10600] hover:text-[#FF1A1A] font-semibold',
     identityPreviewText: 'text-white',
     identityPreviewEditButtonIcon: 'text-[#E10600]',

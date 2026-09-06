@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useApp } from '../../context/AppContext';
 import { LionLogo } from './LionLogo';
-import { Shield, User, X, LogOut, Building2, Sparkles } from 'lucide-react';
+import { X, LogOut, Building2 } from 'lucide-react';
 import {
   SignIn,
   SignUp,
@@ -15,9 +15,9 @@ import {
 } from '@clerk/clerk-react';
 
 export const AuthModal: React.FC = () => {
-  const { isAuthModalOpen, setIsAuthModalOpen, switchUserRole } = useApp();
-  const [authMode, setAuthMode] = useState<'clerk-signin' | 'clerk-signup' | 'demo'>('clerk-signin');
-  const { user: clerkUser, isSignedIn } = useUser();
+  const { isAuthModalOpen, setIsAuthModalOpen } = useApp();
+  const [authMode, setAuthMode] = useState<'clerk-signin' | 'clerk-signup'>('clerk-signin');
+  const { user: clerkUser } = useUser();
   const { signOut } = useClerk();
   const { organization } = useOrganization();
 
@@ -51,7 +51,7 @@ export const AuthModal: React.FC = () => {
             Lion&apos;s Den 3D Authentication
           </h2>
           <p className="text-xs text-neutral-400">
-            Sign in with your username, email, or team organization.
+            Sign in with your email or social account.
           </p>
         </div>
 
@@ -128,7 +128,7 @@ export const AuthModal: React.FC = () => {
 
         {/* Signed Out Auth Tabs */}
         <SignedOut>
-          <div className="grid grid-cols-3 gap-1 p-1 bg-neutral-900 rounded-xl border border-neutral-800 text-xs font-semibold">
+          <div className="grid grid-cols-2 gap-1 p-1 bg-neutral-900 rounded-xl border border-neutral-800 text-xs font-semibold">
             <button
               type="button"
               onClick={() => setAuthMode('clerk-signin')}
@@ -151,18 +151,6 @@ export const AuthModal: React.FC = () => {
             >
               Register
             </button>
-            <button
-              type="button"
-              onClick={() => setAuthMode('demo')}
-              className={`py-2 rounded-lg transition-colors flex items-center justify-center gap-1 ${
-                authMode === 'demo'
-                  ? 'bg-neutral-700 text-white shadow-md'
-                  : 'text-neutral-400 hover:text-white'
-              }`}
-            >
-              <Sparkles className="w-3 h-3 text-amber-400" />
-              <span>Demo</span>
-            </button>
           </div>
 
           {/* Clerk Sign In / Sign Up Forms */}
@@ -183,54 +171,6 @@ export const AuthModal: React.FC = () => {
                 afterSignUpUrl="/"
                 signInUrl="#sign-in"
               />
-            </div>
-          )}
-
-          {/* Quick Demo Switcher View */}
-          {authMode === 'demo' && (
-            <div className="p-4 rounded-xl bg-neutral-900 border border-neutral-800 space-y-3">
-              <div className="flex items-center justify-between text-xs font-mono text-neutral-400">
-                <span className="text-amber-400 font-bold flex items-center gap-1">
-                  ⚡ 1-Click Instant Demo Role:
-                </span>
-                <span>Pre-filled</span>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                <button
-                  type="button"
-                  onClick={() => {
-                    switchUserRole('CUSTOMER');
-                    setIsAuthModalOpen(false);
-                  }}
-                  className="p-3 rounded-lg bg-neutral-950 border border-neutral-800 hover:border-brand-red/60 text-left transition-all group"
-                >
-                  <div className="flex items-center gap-1.5 text-xs font-bold text-white group-hover:text-brand-red">
-                    <User className="w-3.5 h-3.5 text-brand-red" />
-                    <span>Kwame Mensah</span>
-                  </div>
-                  <div className="text-[11px] font-mono text-neutral-500 pt-0.5">
-                    Customer Account
-                  </div>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => {
-                    switchUserRole('ADMIN');
-                    setIsAuthModalOpen(false);
-                  }}
-                  className="p-3 rounded-lg bg-neutral-950 border border-neutral-800 hover:border-brand-red/60 text-left transition-all group"
-                >
-                  <div className="flex items-center gap-1.5 text-xs font-bold text-white group-hover:text-brand-red">
-                    <Shield className="w-3.5 h-3.5 text-brand-red" />
-                    <span>Chief Engineer</span>
-                  </div>
-                  <div className="text-[11px] font-mono text-neutral-500 pt-0.5">
-                    Shop Owner Admin
-                  </div>
-                </button>
-              </div>
             </div>
           )}
         </SignedOut>

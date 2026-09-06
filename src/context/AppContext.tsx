@@ -20,7 +20,6 @@ import {
   DEFAULT_PRICING_CONFIG,
   DEFAULT_PRINTER_FLEET,
   DEFAULT_PRODUCTS,
-  DEFAULT_USERS,
 } from '../data/mockData';
 import { useUser, useClerk, useOrganization } from '@clerk/clerk-react';
 import { supabase } from '../lib/supabase';
@@ -159,16 +158,51 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   // Currency
   const [currency, setCurrency] = useState<Currency>('GHS');
 
-  // Auth - starts as Kwame Mensah (Customer) or saved session
+  // Auth - strictly null by default for fresh production visitors (no demo user)
   const [currentUser, setCurrentUser] = useState<User | null>(() => {
     const saved = localStorage.getItem('ld3d_user');
-    return saved ? JSON.parse(saved) : DEFAULT_USERS[0];
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        if (
+          parsed.id === 'usr-customer-1' ||
+          parsed.id === 'usr-admin-1' ||
+          parsed.id === 'usr-001' ||
+          parsed.id === 'usr-002'
+        ) {
+          localStorage.removeItem('ld3d_user');
+          return null;
+        }
+        return parsed;
+      } catch {
+        return null;
+      }
+    }
+    return null;
   });
 
   // Clerk Auth Integration
   const { user: clerkUser, isSignedIn } = useUser();
   const { signOut } = useClerk();
   const { organization } = useOrganization();
+
+  // Clear demo session if signed out
+  useEffect(() => {
+    if (!isSignedIn) {
+      const saved = localStorage.getItem('ld3d_user');
+      if (saved) {
+        try {
+          const parsed = JSON.parse(saved);
+          if (parsed.id === 'usr-customer-1' || parsed.id === 'usr-admin-1') {
+            localStorage.removeItem('ld3d_user');
+            setCurrentUser(null);
+          }
+        } catch {
+          setCurrentUser(null);
+        }
+      }
+    }
+  }, [isSignedIn]);
 
   // Sync Clerk authenticated user with App state and Supabase profiles
   useEffect(() => {
@@ -318,18 +352,24 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   // Auth Helpers
   const switchUserRole = (role: 'CUSTOMER' | 'ADMIN') => {
-    const targetUser = role === 'ADMIN' ? DEFAULT_USERS[1] : DEFAULT_USERS[0];
-    setCurrentUser(targetUser);
-    if (role === 'ADMIN') {
-      setActivePage('admin');
-    } else if (activePage === 'admin') {
-      setActivePage('home');
+    if (currentUser) {
+      const updated = { ...currentUser, role };
+      setCurrentUser(updated);
+      localStorage.setItem('ld3d_user', JSON.stringify(updated));
     }
   };
 
   const login = (email: string, role: 'CUSTOMER' | 'ADMIN' = 'CUSTOMER') => {
-    const user = role === 'ADMIN' ? DEFAULT_USERS[1] : { ...DEFAULT_USERS[0], email };
+    const user: User = {
+      id: 'usr-' + Math.random().toString(36).substring(2, 9),
+      name: email.split('@')[0],
+      email: email,
+      phone: '',
+      role: role,
+      createdAt: new Date().toISOString(),
+    };
     setCurrentUser(user);
+    localStorage.setItem('ld3d_user', JSON.stringify(user));
     setIsAuthModalOpen(false);
     return true;
   };

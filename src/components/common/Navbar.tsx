@@ -146,119 +146,120 @@ export const Navbar: React.FC = () => {
               </button>
 
               {userMenuOpen && (
-                <div className="absolute right-0 mt-2 w-64 rounded-2xl bg-[#121212] border border-neutral-800 shadow-2xl p-2.5 z-50 animate-slide-up space-y-1.5">
-                  {/* Profile Header */}
-                  <div className="px-3 py-2.5 bg-neutral-950/80 rounded-xl border border-neutral-800/80">
-                    <div className="flex items-center justify-between">
-                      <div className="text-xs font-bold text-white truncate max-w-[140px]">
-                        {currentUser?.name || 'Guest User'}
+                <div className="absolute right-0 mt-2 w-64 rounded-2xl bg-[#121212] border border-neutral-800 shadow-2xl p-2.5 z-50 animate-slide-up space-y-2">
+                  {currentUser ? (
+                    <>
+                      {/* Authenticated User Header */}
+                      <div className="px-3 py-2.5 bg-neutral-950/80 rounded-xl border border-neutral-800/80">
+                        <div className="flex items-center justify-between">
+                          <div className="text-xs font-bold text-white truncate max-w-[140px]">
+                            {currentUser.name}
+                          </div>
+                          <span className="px-1.5 py-0.5 rounded text-[9px] font-mono font-bold bg-brand-red/20 border border-brand-red/40 text-brand-red uppercase">
+                            {currentUser.role}
+                          </span>
+                        </div>
+                        <div className="text-[11px] text-neutral-500 font-mono truncate pt-0.5">
+                          {currentUser.email || (currentUser.username ? `@${currentUser.username}` : '')}
+                        </div>
                       </div>
-                      <span className="px-1.5 py-0.5 rounded text-[9px] font-mono font-bold bg-brand-red/20 border border-brand-red/40 text-brand-red uppercase">
-                        {currentUser?.role || 'CLIENT'}
-                      </span>
-                    </div>
-                    <div className="text-[11px] text-neutral-500 font-mono truncate pt-0.5">
-                      {currentUser?.email || (currentUser?.username ? `@${currentUser.username}` : 'No active session')}
-                    </div>
-                  </div>
 
-                  {/* Navigation Links */}
-                  <button
-                    onClick={() => {
-                      setActivePage('dashboard', 'push-down');
-                      setUserMenuOpen(false);
-                    }}
-                    className="w-full text-left px-3 py-2 rounded-lg text-xs text-neutral-300 hover:text-white hover:bg-neutral-800 flex items-center gap-2 transition-colors"
-                  >
-                    <LayoutDashboard className="w-3.5 h-3.5 text-neutral-400" />
-                    <span>Customer Dashboard</span>
-                  </button>
+                      {/* Authenticated Links */}
+                      <div className="space-y-1">
+                        <button
+                          onClick={() => {
+                            setActivePage('dashboard', 'push-down');
+                            setUserMenuOpen(false);
+                          }}
+                          className="w-full text-left px-3 py-2 rounded-lg text-xs text-neutral-300 hover:text-white hover:bg-neutral-800 flex items-center gap-2 transition-colors"
+                        >
+                          <LayoutDashboard className="w-3.5 h-3.5 text-neutral-400" />
+                          <span>Customer Dashboard</span>
+                        </button>
 
-                  <button
-                    onClick={() => {
-                      setActivePage('tracker', 'push-down');
-                      setUserMenuOpen(false);
-                    }}
-                    className="w-full text-left px-3 py-2 rounded-lg text-xs text-neutral-300 hover:text-white hover:bg-neutral-800 flex items-center gap-2 transition-colors"
-                  >
-                    <Clock className="w-3.5 h-3.5 text-neutral-400" />
-                    <span>Track Orders</span>
-                  </button>
+                        <button
+                          onClick={() => {
+                            setActivePage('tracker', 'push-down');
+                            setUserMenuOpen(false);
+                          }}
+                          className="w-full text-left px-3 py-2 rounded-lg text-xs text-neutral-300 hover:text-white hover:bg-neutral-800 flex items-center gap-2 transition-colors"
+                        >
+                          <Clock className="w-3.5 h-3.5 text-neutral-400" />
+                          <span>Track Orders</span>
+                        </button>
 
-                  {/* Direct Login / Register Link */}
-                  <button
-                    onClick={() => {
-                      setActivePage('login', 'push-down');
-                      setUserMenuOpen(false);
-                    }}
-                    className="w-full text-left px-3 py-2 rounded-lg text-xs text-neutral-300 hover:text-white hover:bg-neutral-800 flex items-center gap-2 transition-colors"
-                  >
-                    <UserIcon className="w-3.5 h-3.5 text-brand-red" />
-                    <span>Sign In / Create Account</span>
-                  </button>
+                        {currentUser.role === 'ADMIN' && (
+                          <button
+                            onClick={() => {
+                              setActivePage('admin', 'push-down');
+                              setUserMenuOpen(false);
+                            }}
+                            className="w-full text-left px-3 py-2 rounded-lg text-xs text-brand-red hover:text-brand-redBright hover:bg-neutral-800 flex items-center gap-2 transition-colors font-semibold"
+                          >
+                            <Shield className="w-3.5 h-3.5" />
+                            <span>Admin Staff Portal</span>
+                          </button>
+                        )}
+                      </div>
 
-                  {/* Admin Direct Access */}
-                  <button
-                    onClick={() => {
-                      if (currentUser?.role === 'ADMIN') {
-                        setActivePage('admin', 'push-down');
-                      } else {
-                        setActivePage('admin-login', 'push-down');
-                      }
-                      setUserMenuOpen(false);
-                    }}
-                    className="w-full text-left px-3 py-2 rounded-lg text-xs text-brand-red hover:text-brand-redBright hover:bg-neutral-800 flex items-center gap-2 transition-colors font-semibold"
-                  >
-                    <Shield className="w-3.5 h-3.5" />
-                    <span>Admin Staff Portal</span>
-                  </button>
+                      {/* Sign Out Button */}
+                      <div className="border-t border-neutral-800 pt-1.5">
+                        <button
+                          onClick={() => {
+                            logout();
+                            setUserMenuOpen(false);
+                          }}
+                          className="w-full text-left px-3 py-2 rounded-lg text-xs text-red-400 hover:text-white hover:bg-red-950/40 flex items-center gap-2 transition-colors font-medium"
+                        >
+                          <LogOut className="w-3.5 h-3.5" />
+                          <span>Sign Out</span>
+                        </button>
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      {/* Guest Visitor Dropdown */}
+                      <div className="px-3 py-2.5 bg-neutral-950/80 rounded-xl border border-neutral-800/80 text-center space-y-1">
+                        <div className="text-xs font-bold text-white">Guest Visitor</div>
+                        <div className="text-[11px] text-neutral-500">Sign in to save models & manage orders</div>
+                      </div>
 
-                  {/* Role Switcher */}
-                  <div className="border-t border-neutral-800 pt-2 px-1">
-                    <span className="text-[10px] text-neutral-500 block mb-1 font-mono uppercase">Role Preview:</span>
-                    <div className="grid grid-cols-2 gap-1">
                       <button
                         onClick={() => {
-                          switchUserRole('CUSTOMER');
+                          setActivePage('login', 'push-down');
                           setUserMenuOpen(false);
                         }}
-                        className={`py-1 rounded text-[10px] font-semibold text-center transition-colors ${
-                          currentUser?.role === 'CUSTOMER'
-                            ? 'bg-brand-red text-white'
-                            : 'text-neutral-400 bg-neutral-900 hover:text-white'
-                        }`}
+                        className="w-full py-2.5 px-3 rounded-xl bg-brand-red hover:bg-brand-redBright text-white text-xs font-bold font-display uppercase tracking-wider flex items-center justify-center gap-2 shadow-lg shadow-red-950/40 transition-all"
                       >
-                        Client
+                        <UserIcon className="w-3.5 h-3.5" />
+                        <span>Sign In / Register</span>
                       </button>
-                      <button
-                        onClick={() => {
-                          switchUserRole('ADMIN');
-                          setUserMenuOpen(false);
-                        }}
-                        className={`py-1 rounded text-[10px] font-semibold text-center transition-colors ${
-                          currentUser?.role === 'ADMIN'
-                            ? 'bg-brand-red text-white'
-                            : 'text-neutral-400 bg-neutral-900 hover:text-white'
-                        }`}
-                      >
-                        Admin
-                      </button>
-                    </div>
-                  </div>
 
-                  {/* Sign Out Button */}
-                  <div className="border-t border-neutral-800 pt-1.5">
-                    <button
-                      onClick={() => {
-                        logout();
-                        setUserMenuOpen(false);
-                      }}
-                      className="w-full text-left px-3 py-2 rounded-lg text-xs text-red-400 hover:text-white hover:bg-red-950/40 flex items-center gap-2 transition-colors font-medium"
-                    >
-                      <LogOut className="w-3.5 h-3.5" />
-                      <span>Sign Out</span>
-                    </button>
-                  </div>
+                      <div className="space-y-1 pt-1 border-t border-neutral-800">
+                        <button
+                          onClick={() => {
+                            setActivePage('tracker', 'push-down');
+                            setUserMenuOpen(false);
+                          }}
+                          className="w-full text-left px-3 py-2 rounded-lg text-xs text-neutral-400 hover:text-white hover:bg-neutral-800 flex items-center gap-2 transition-colors"
+                        >
+                          <Clock className="w-3.5 h-3.5 text-neutral-400" />
+                          <span>Track an Order</span>
+                        </button>
+
+                        <button
+                          onClick={() => {
+                            setActivePage('admin-login', 'push-down');
+                            setUserMenuOpen(false);
+                          }}
+                          className="w-full text-left px-3 py-2 rounded-lg text-xs text-neutral-500 hover:text-brand-red hover:bg-neutral-800 flex items-center gap-2 transition-colors font-mono"
+                        >
+                          <Shield className="w-3.5 h-3.5" />
+                          <span>Admin Staff Portal</span>
+                        </button>
+                      </div>
+                    </>
+                  )}
                 </div>
               )}
             </div>

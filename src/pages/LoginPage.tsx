@@ -1,12 +1,12 @@
 import React, { useState } from 'react';
 import { useApp } from '../context/AppContext';
 import { LionLogo } from '../components/common/LionLogo';
-import { ArrowLeft, Shield, Sparkles, User } from 'lucide-react';
-import { SignIn, SignUp, SignedIn, UserButton, OrganizationSwitcher, useUser } from '@clerk/clerk-react';
+import { ArrowLeft, Shield } from 'lucide-react';
+import { SignIn, SignUp, SignedIn, SignedOut, UserButton, OrganizationSwitcher, useUser } from '@clerk/clerk-react';
 
 export const LoginPage: React.FC = () => {
-  const { setActivePage, switchUserRole } = useApp();
-  const [authMode, setAuthMode] = useState<'signin' | 'signup' | 'demo'>('signin');
+  const { setActivePage } = useApp();
+  const [authMode, setAuthMode] = useState<'signin' | 'signup'>('signin');
   const { user: clerkUser } = useUser();
 
   return (
@@ -76,91 +76,43 @@ export const LoginPage: React.FC = () => {
             </div>
           </SignedIn>
 
-          {/* Minimal Mode Switcher */}
-          <div className="grid grid-cols-3 gap-1 p-1 bg-neutral-900 rounded-xl border border-neutral-800 text-xs font-semibold">
-            <button
-              type="button"
-              onClick={() => setAuthMode('signin')}
-              className={`py-2 rounded-lg transition-colors ${
-                authMode === 'signin' ? 'bg-brand-red text-white shadow-md' : 'text-neutral-400 hover:text-white'
-              }`}
-            >
-              Sign In
-            </button>
-            <button
-              type="button"
-              onClick={() => setAuthMode('signup')}
-              className={`py-2 rounded-lg transition-colors ${
-                authMode === 'signup' ? 'bg-brand-red text-white shadow-md' : 'text-neutral-400 hover:text-white'
-              }`}
-            >
-              Sign Up
-            </button>
-            <button
-              type="button"
-              onClick={() => setAuthMode('demo')}
-              className={`py-2 rounded-lg transition-colors flex items-center justify-center gap-1 ${
-                authMode === 'demo' ? 'bg-neutral-700 text-white shadow-md' : 'text-neutral-400 hover:text-white'
-              }`}
-            >
-              <Sparkles className="w-3 h-3 text-amber-400" />
-              <span>Demo</span>
-            </button>
-          </div>
-
-          {/* Minimal Form Embeds */}
-          {authMode === 'signin' && (
-            <div className="flex justify-center">
-              <SignIn routing="hash" afterSignInUrl="/" signUpUrl="#sign-up" />
-            </div>
-          )}
-
-          {authMode === 'signup' && (
-            <div className="flex justify-center">
-              <SignUp routing="hash" afterSignUpUrl="/" signInUrl="#sign-in" />
-            </div>
-          )}
-
-          {/* Minimal Demo Option */}
-          {authMode === 'demo' && (
-            <div className="p-3 rounded-2xl bg-neutral-900 border border-neutral-800 space-y-2">
+          {/* Signed Out Auth */}
+          <SignedOut>
+            {/* Minimal 2-Way Mode Switcher */}
+            <div className="grid grid-cols-2 gap-1 p-1 bg-neutral-900 rounded-xl border border-neutral-800 text-xs font-semibold">
               <button
                 type="button"
-                onClick={() => {
-                  switchUserRole('CUSTOMER');
-                  setActivePage('dashboard', 'push-down');
-                }}
-                className="w-full p-3 rounded-xl bg-neutral-950 border border-neutral-800 hover:border-brand-red/60 text-left transition-all flex items-center justify-between group"
+                onClick={() => setAuthMode('signin')}
+                className={`py-2 rounded-lg transition-colors ${
+                  authMode === 'signin' ? 'bg-brand-red text-white shadow-md' : 'text-neutral-400 hover:text-white'
+                }`}
               >
-                <div className="flex items-center gap-2.5">
-                  <User className="w-4 h-4 text-brand-red" />
-                  <div>
-                    <div className="text-xs font-bold text-white group-hover:text-brand-red">Kwame Mensah</div>
-                    <div className="text-[10px] text-neutral-500 font-mono">Customer Account</div>
-                  </div>
-                </div>
-                <span className="text-xs text-neutral-400 group-hover:text-white">&rarr;</span>
+                Sign In
               </button>
-
               <button
                 type="button"
-                onClick={() => {
-                  switchUserRole('ADMIN');
-                  setActivePage('admin', 'push-down');
-                }}
-                className="w-full p-3 rounded-xl bg-neutral-950 border border-neutral-800 hover:border-brand-red/60 text-left transition-all flex items-center justify-between group"
+                onClick={() => setAuthMode('signup')}
+                className={`py-2 rounded-lg transition-colors ${
+                  authMode === 'signup' ? 'bg-brand-red text-white shadow-md' : 'text-neutral-400 hover:text-white'
+                }`}
               >
-                <div className="flex items-center gap-2.5">
-                  <Shield className="w-4 h-4 text-brand-red" />
-                  <div>
-                    <div className="text-xs font-bold text-white group-hover:text-brand-red">Chief Engineer Kofi</div>
-                    <div className="text-[10px] text-neutral-500 font-mono">Shop Owner Admin</div>
-                  </div>
-                </div>
-                <span className="text-xs text-neutral-400 group-hover:text-white">&rarr;</span>
+                Sign Up
               </button>
             </div>
-          )}
+
+            {/* Minimal Form Embeds */}
+            {authMode === 'signin' && (
+              <div className="flex justify-center">
+                <SignIn routing="hash" afterSignInUrl="/" signUpUrl="#sign-up" />
+              </div>
+            )}
+
+            {authMode === 'signup' && (
+              <div className="flex justify-center">
+                <SignUp routing="hash" afterSignUpUrl="/" signInUrl="#sign-in" />
+              </div>
+            )}
+          </SignedOut>
         </div>
       </div>
     </div>
