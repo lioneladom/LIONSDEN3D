@@ -26,6 +26,7 @@ import {
 } from 'lucide-react';
 import * as THREE from 'three';
 import { STLParserService } from '../services/3d/stlParser';
+import { ProceduralModelService } from '../services/3d/proceduralModels';
 
 export const ConfiguratorPage: React.FC = () => {
   const {
@@ -91,15 +92,33 @@ export const ConfiguratorPage: React.FC = () => {
 
   // Re-generate geometry from fileBuffer if activeModel has buffer
   const threeGeometry = useMemo(() => {
-    if (!activeModel?.fileBuffer) return null;
-    try {
-      const { geometry } = STLParserService.parse(activeModel.fileBuffer);
-      return geometry;
-    } catch (err) {
-      console.error('Error generating Three geometry:', err);
-      return null;
+    if (!activeModel) return null;
+    if (activeModel.fileBuffer && activeModel.fileBuffer.byteLength > 0) {
+      try {
+        const { geometry } = STLParserService.parse(activeModel.fileBuffer);
+        return geometry;
+      } catch (err) {
+        console.warn('Could not parse threeGeometry from buffer, using geometric fallback:', err);
+      }
     }
-  }, [activeModel]);
+    // Fallback: Generate 3D geometry matching model dimensions so canvas NEVER renders blank!
+    try {
+      const dims = activeModel.geometry?.dimensions || { x: 80, y: 80, z: 40 };
+      const safeX = Math.max(10, dims.x || 80);
+      const safeY = Math.max(10, dims.y || 80);
+      const safeZ = Math.max(5, dims.z || 40);
+      const fallbackGeo = new THREE.BoxGeometry(safeX, safeZ, safeY);
+      fallbackGeo.center();
+      fallbackGeo.translate(0, safeZ / 2, 0);
+      fallbackGeo.computeVertexNormals();
+      return fallbackGeo;
+    } catch {
+      const safeGeo = new THREE.BoxGeometry(60, 40, 60);
+      safeGeo.center();
+      safeGeo.translate(0, 20, 0);
+      return safeGeo;
+    }
+  }, [activeModel?.id, activeModel?.fileBuffer]);
 
   // Calculate price breakdowns for all parts in the assembly
   const allPartsBreakdowns = useMemo(() => {
@@ -284,6 +303,29 @@ export const ConfiguratorPage: React.FC = () => {
     }
   }, [activeModel]);
 
+  const [isDragging, setIsDragging] = useState(false);
+
+  const handleLoadSample = (sampleKey: string, filename: string) => {
+    try {
+      const geom = ProceduralModelService.generateGeometry(sampleKey);
+      const buffer = ProceduralModelService.geometryToBinarySTL(geom);
+      const { data } = STLParserService.parse(buffer, { x: 300, y: 300, z: 400 }, true);
+
+      const model: STLModel = {
+        id: `model-sample-${Date.now()}`,
+        filename: filename,
+        fileSize: buffer.byteLength,
+        fileBuffer: buffer,
+        geometry: data,
+        createdAt: new Date().toISOString(),
+      };
+
+      loadModelsIntoConfigurator([model]);
+    } catch (err) {
+      console.error('Error loading sample model:', err);
+    }
+  };
+
   const handleFileInput = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files || files.length === 0) return;
@@ -303,9 +345,28 @@ export const ConfiguratorPage: React.FC = () => {
           createdAt: new Date().toISOString(),
         });
       }
-      handleAddFiles(addedModels);
-    } catch (err) {
+      if (addedModels.length > 0) {
+        if (!activeModel || activeModelList.length === 0) {
+          loadModelsIntoConfigurator(addedModels);
+        } else {
+          handleAddFiles(addedModels);
+        }
+      }
+    } catch (err: any) {
       console.error('Failed to parse STL file:', err);
+      alert('Could not parse STL model: ' + (err?.message || 'Invalid format'));
+    }
+    e.target.value = '';
+  };
+
+  const handleDrop = async (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+      const fakeEvent = {
+        target: { files: e.dataTransfer.files, value: '' }
+      } as unknown as React.ChangeEvent<HTMLInputElement>;
+      await handleFileInput(fakeEvent);
     }
   };
 
@@ -333,21 +394,33 @@ export const ConfiguratorPage: React.FC = () => {
         {/* Left Column (Viewport & 3 Data Cards) */}
         <div className="lg:col-span-7 space-y-4">
           {/* Main 3D Viewport / Upload Box matching Mockup 2 */}
-          <div className="relative rounded-3xl overflow-hidden bg-[#0A0A0A] border border-neutral-900 min-h-[480px] sm:min-h-[520px] flex items-center justify-center p-6 shadow-2xl">
+          <div className="relative rounded-3xl overflow-hidden bg-[#0A0A0A] border border-neutral-900 min-h-[480px] sm:min-h-[520px] shadow-2xl">
             {!activeModel ? (
               /* Red Dashed Upload Box matching Mockup 2 */
-              <div className="w-full max-w-md p-10 rounded-3xl border-2 border-dashed border-red-600/70 text-center bg-[#0e0e0e] shadow-inner">
-                <div className="w-14 h-14 rounded-full bg-red-950/60 border border-red-800/40 text-brand-red flex items-center justify-center mx-auto mb-4">
-                  <Upload className="w-6 h-6" />
+              <div
+                onDragOver={(e) => {
+                  e.preventDefault();
+                  setIsDragging(true);
+                }}
+                onDragLeave={() => setIsDragging(false)}
+                onDrop={handleDrop}
+                className={`w-full min-h-[480px] sm:min-h-[520px] p-8 sm:p-12 flex flex-col items-center justify-center text-center transition-all ${
+                  isDragging
+                    ? 'border-2 border-brand-red bg-brand-red/10'
+                    : 'border-2 border-dashed border-red-600/50 bg-[#0e0e0e]'
+                }`}
+              >
+                <div className="w-16 h-16 rounded-2xl bg-red-950/60 border border-red-800/40 text-brand-red flex items-center justify-center mx-auto mb-4 shadow-lg shadow-red-950/50">
+                  <Upload className="w-7 h-7" />
                 </div>
-                <h3 className="text-lg font-bold text-white mb-1.5">
-                  Upload STL File
+                <h3 className="text-xl font-bold text-white mb-1.5 font-display tracking-tight">
+                  Upload STL 3D Model
                 </h3>
-                <p className="text-xs text-neutral-400 mb-6">
-                  Drag and drop your 3D model here or browse files.
+                <p className="text-xs text-neutral-400 max-w-sm mb-6 leading-relaxed">
+                  Drag and drop your single or multi-part .STL file here, or click below to browse from your device.
                 </p>
-                <label className="inline-flex items-center justify-center px-8 py-2.5 rounded-lg bg-brand-red hover:bg-brand-redBright text-white font-bold text-xs uppercase tracking-wider cursor-pointer shadow-red-glow transition-all">
-                  <span>Select File</span>
+                <label className="inline-flex items-center justify-center px-8 py-3 rounded-xl bg-brand-red hover:bg-brand-redBright text-white font-bold text-xs uppercase tracking-wider cursor-pointer shadow-red-glow transition-all mb-8">
+                  <span>Select STL File</span>
                   <input
                     type="file"
                     accept=".stl"
@@ -356,6 +429,48 @@ export const ConfiguratorPage: React.FC = () => {
                     className="hidden"
                   />
                 </label>
+
+                {/* Instant 1-Click Sample Testing */}
+                <div className="pt-6 border-t border-neutral-800/80 w-full max-w-md space-y-2.5">
+                  <div className="flex items-center justify-between text-[11px] font-mono text-neutral-400">
+                    <span className="text-amber-400 font-bold flex items-center gap-1">
+                      <Sparkles className="w-3.5 h-3.5" /> Quick Test Samples:
+                    </span>
+                    <span>1-Click Load</span>
+                  </div>
+                  <div className="grid grid-cols-3 gap-2 text-left">
+                    <button
+                      type="button"
+                      onClick={() => handleLoadSample('lion-emblem', 'Lion_Den_Emblem.stl')}
+                      className="p-2.5 rounded-xl bg-neutral-900 hover:bg-neutral-800 border border-neutral-800 hover:border-brand-red/60 transition-all text-left group"
+                    >
+                      <div className="text-[11px] font-bold text-white group-hover:text-brand-red transition-colors truncate">
+                        Lion Head
+                      </div>
+                      <div className="text-[9px] text-neutral-500 font-mono">Sculpture</div>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleLoadSample('planetary-gear', 'Planetary_Gearbox.stl')}
+                      className="p-2.5 rounded-xl bg-neutral-900 hover:bg-neutral-800 border border-neutral-800 hover:border-brand-red/60 transition-all text-left group"
+                    >
+                      <div className="text-[11px] font-bold text-white group-hover:text-brand-red transition-colors truncate">
+                        Planetary Gear
+                      </div>
+                      <div className="text-[9px] text-neutral-500 font-mono">Mechanism</div>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleLoadSample('lattice-cube', 'Lattice_Stress_Cube.stl')}
+                      className="p-2.5 rounded-xl bg-neutral-900 hover:bg-neutral-800 border border-neutral-800 hover:border-brand-red/60 transition-all text-left group"
+                    >
+                      <div className="text-[11px] font-bold text-white group-hover:text-brand-red transition-colors truncate">
+                        Lattice Cube
+                      </div>
+                      <div className="text-[9px] text-neutral-500 font-mono">Benchmark</div>
+                    </button>
+                  </div>
+                </div>
               </div>
             ) : (
               /* Interactive 3D Canvas */

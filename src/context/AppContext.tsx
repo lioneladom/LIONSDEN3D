@@ -339,15 +339,28 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   }, [inventory]);
 
   useEffect(() => {
-    localStorage.setItem('ld3d_orders', JSON.stringify(orders));
+    try {
+      localStorage.setItem('ld3d_orders', JSON.stringify(orders));
+    } catch (e) {
+      console.warn('Orders storage error:', e);
+    }
   }, [orders]);
 
   useEffect(() => {
-    localStorage.setItem('ld3d_cart', JSON.stringify(cart));
+    try {
+      localStorage.setItem('ld3d_cart', JSON.stringify(cart));
+    } catch (e) {
+      console.warn('Cart storage error:', e);
+    }
   }, [cart]);
 
   useEffect(() => {
-    localStorage.setItem('ld3d_user_models', JSON.stringify(userModels));
+    try {
+      const serializable = userModels.map(({ fileBuffer, ...rest }) => rest);
+      localStorage.setItem('ld3d_user_models', JSON.stringify(serializable));
+    } catch (e) {
+      console.warn('User models storage note:', e);
+    }
   }, [userModels]);
 
   // Auth Helpers

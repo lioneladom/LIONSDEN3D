@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { STLLoader } from 'three/examples/jsm/loaders/STLLoader.js';
 import { STLGeometryData, ValidationIssue, ValidationStatus } from '../../types';
 
 export class STLParserService {
@@ -14,8 +15,23 @@ export class STLParserService {
     geometry: THREE.BufferGeometry;
     data: STLGeometryData;
   } {
-    const isBinary = this.isBinarySTL(buffer);
-    const geometry = isBinary ? this.parseBinary(buffer) : this.parseASCII(buffer);
+    if (!buffer || buffer.byteLength === 0) {
+      throw new Error('Empty STL file buffer.');
+    }
+
+    let geometry: THREE.BufferGeometry;
+    try {
+      const loader = new STLLoader();
+      geometry = loader.parse(buffer);
+    } catch (err: any) {
+      console.warn('STLLoader primary parse error, attempting fallback:', err);
+      const isBinary = this.isBinarySTL(buffer);
+      geometry = isBinary ? this.parseBinary(buffer) : this.parseASCII(buffer);
+    }
+
+    if (!geometry || !geometry.attributes.position || geometry.attributes.position.count === 0) {
+      throw new Error('The uploaded file contains no valid 3D polygon mesh.');
+    }
 
     // Standard CAD exports have Z as Height (Up) and Y as Depth (Back/Forward).
     // In Three.js, Y is Height (Up) and Z is Depth.
@@ -31,6 +47,11 @@ export class STLParserService {
     const size = new THREE.Vector3();
     box.getSize(size);
 
+    // Sanitize any NaN or zero dimensions
+    if (!isFinite(size.x) || !isFinite(size.y) || !isFinite(size.z) || size.x <= 0 || size.y <= 0 || size.z <= 0) {
+      size.set(50, 50, 50);
+    }
+
     const center = new THREE.Vector3();
     box.getCenter(center);
 
@@ -38,7 +59,7 @@ export class STLParserService {
     geometry.center();
     geometry.translate(0, size.y / 2, 0);
 
-    const triangleCount = geometry.attributes.position.count / 3;
+    const triangleCount = Math.floor(geometry.attributes.position.count / 3);
     const { volumeMm3, surfaceAreaMm2, degenerateCount } = this.calculateMeshProperties(geometry);
     const volumeCm3 = volumeMm3 / 1000;
 
@@ -271,7 +292,9 @@ export class STLParserService {
         p1.z * (p2.x * p3.y - p2.y * p3.x)
       ) / 6.0;
 
-      totalVolume += v;
+      if (isFinite(v)) {
+        totalVolume += v;
+      }
 
       // Surface area
       e1.subVectors(p2, p1);
@@ -279,16 +302,23 @@ export class STLParserService {
       cross.crossVectors(e1, e2);
       const area = cross.length() * 0.5;
 
-      if (area < 0.00001) {
+      if (!isFinite(area) || area < 0.00001) {
         degenerateCount++;
       } else {
         totalArea += area;
       }
     }
 
+    const box = geometry.boundingBox || new THREE.Box3();
+    const size = new THREE.Vector3();
+    box.getSize(size);
+    const fallbackVolume = Math.max(100, size.x * size.y * size.z * 0.45);
+    const safeVolume = (!isFinite(totalVolume) || totalVolume <= 0) ? fallbackVolume : Math.abs(totalVolume);
+    const safeArea = (!isFinite(totalArea) || totalArea <= 0) ? Math.max(50, 2 * (size.x * size.y + size.x * size.z + size.y * size.z)) : totalArea;
+
     return {
-      volumeMm3: totalVolume,
-      surfaceAreaMm2: totalArea,
+      volumeMm3: safeVolume,
+      surfaceAreaMm2: safeArea,
       degenerateCount,
     };
   }

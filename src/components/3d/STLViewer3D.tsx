@@ -128,12 +128,12 @@ export const STLViewer3D: React.FC<STLViewer3DProps> = ({
     sceneRef.current = scene;
 
     // 2. Camera
-    const camera = new THREE.PerspectiveCamera(45, width / heightPx, 1, 2000);
+    const camera = new THREE.PerspectiveCamera(45, width / heightPx, 0.1, 10000);
     camera.position.set(160, 140, 200);
     cameraRef.current = camera;
 
     // 3. Renderer
-    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, powerPreference: 'high-performance' });
     renderer.setSize(width, heightPx);
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     renderer.shadowMap.enabled = true;
@@ -149,10 +149,24 @@ export const STLViewer3D: React.FC<STLViewer3DProps> = ({
     controls.dampingFactor = 0.06;
     controls.maxPolarAngle = Math.PI; // Allow full 360 vertical rotation to inspect the bottom of models
     controls.minPolarAngle = 0;
-    controls.minDistance = 30;
-    controls.maxDistance = 600;
+    controls.minDistance = 0.5;
+    controls.maxDistance = 10000;
     controls.enabled = interactive;
     controlsRef.current = controls;
+
+    // Responsive Resize Observer
+    const handleResize = () => {
+      if (!container || !rendererRef.current || !cameraRef.current) return;
+      const w = container.clientWidth;
+      const h = container.clientHeight;
+      if (w > 0 && h > 0) {
+        cameraRef.current.aspect = w / h;
+        cameraRef.current.updateProjectionMatrix();
+        rendererRef.current.setSize(w, h);
+      }
+    };
+    const resizeObserver = new ResizeObserver(handleResize);
+    resizeObserver.observe(container);
 
     // 5. Clean Studio Lighting
     const ambientLight = new THREE.AmbientLight(0xffffff, 0.85);
@@ -225,6 +239,7 @@ export const STLViewer3D: React.FC<STLViewer3DProps> = ({
 
     return () => {
       cancelAnimationFrame(animationFrameId);
+      resizeObserver.disconnect();
       renderer.dispose();
     };
   }, [interactive]);
@@ -333,15 +348,28 @@ export const STLViewer3D: React.FC<STLViewer3DProps> = ({
       boxHelperRef.current = boxHelper;
     }
 
-    // Auto fit camera
+    // Auto fit camera safely
     if (cameraRef.current && controlsRef.current) {
       const currentBox = new THREE.Box3().setFromObject(mesh);
       const center = currentBox.getCenter(new THREE.Vector3());
-      const maxDim = Math.max(size.x, size.y, size.z);
+      const currentSize = currentBox.getSize(new THREE.Vector3());
+      const maxDim = Math.max(currentSize.x, currentSize.y, currentSize.z);
+      const safeDim = (!isFinite(maxDim) || maxDim <= 0) ? 60 : maxDim;
 
-      controlsRef.current.target.set(center.x, center.y, center.z);
-      cameraRef.current.position.set(center.x + maxDim * 1.6, center.y + maxDim * 1.3, center.z + maxDim * 1.8);
+      controlsRef.current.target.copy(center);
+      const distance = safeDim * 1.8;
+      cameraRef.current.position.set(
+        center.x + distance * 0.9,
+        center.y + distance * 0.7,
+        center.z + distance * 1.1
+      );
+      cameraRef.current.near = Math.max(0.1, safeDim / 200);
+      cameraRef.current.far = Math.max(5000, safeDim * 30);
+      cameraRef.current.updateProjectionMatrix();
       cameraRef.current.lookAt(center);
+
+      controlsRef.current.minDistance = Math.max(0.1, safeDim / 50);
+      controlsRef.current.maxDistance = Math.max(1000, safeDim * 15);
       controlsRef.current.update();
     }
   }, [geometry, config.scalePercentage, config.colorId, material, viewMode, showMeasurements, rotationOffsets]);
