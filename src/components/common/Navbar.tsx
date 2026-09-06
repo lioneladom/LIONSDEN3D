@@ -12,6 +12,8 @@ import {
   LayoutDashboard,
   Shield,
   Upload,
+  ChevronDown,
+  LogOut,
 } from 'lucide-react';
 
 export const Navbar: React.FC = () => {
@@ -119,35 +121,48 @@ export const Navbar: React.FC = () => {
               )}
             </button>
 
-            {/* Direct Sign In Button */}
-            <button
-              onClick={() => setActivePage('login', 'push-down')}
-              className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-neutral-900 hover:bg-neutral-800 border border-neutral-800 hover:border-neutral-700 text-xs font-semibold text-neutral-300 hover:text-white transition-all"
-              title="Sign In / Register"
-            >
-              <UserIcon className="w-3.5 h-3.5 text-brand-red" />
-              <span>{currentUser?.name ? currentUser.name.split(' ')[0] : 'Sign In'}</span>
-            </button>
-
-            {/* User Account / Profile Dropdown Trigger */}
+            {/* Single Unified Profile / Account Trigger */}
             <div className="relative" ref={userMenuRef}>
               <button
                 onClick={() => setUserMenuOpen(!userMenuOpen)}
-                className="text-neutral-400 hover:text-white transition-colors p-1 rounded-lg hover:bg-neutral-800"
-                title="Account Menu"
+                className="flex items-center gap-2 px-2.5 py-1.5 rounded-xl bg-neutral-900/90 hover:bg-neutral-800 border border-neutral-800 hover:border-neutral-700 text-xs text-neutral-300 hover:text-white transition-all shadow-sm group"
+                title="Account & Profile"
               >
-                <div className="w-6 h-6 rounded-full bg-neutral-800 border border-neutral-700 flex items-center justify-center text-[11px] font-bold text-neutral-300">
-                  {currentUser?.name ? currentUser.name[0].toUpperCase() : 'U'}
-                </div>
+                {currentUser?.avatarUrl ? (
+                  <img
+                    src={currentUser.avatarUrl}
+                    alt={currentUser.name}
+                    className="w-5 h-5 rounded-full object-cover border border-brand-red/50"
+                  />
+                ) : (
+                  <div className="w-5 h-5 rounded-full bg-brand-red/20 border border-brand-red/40 flex items-center justify-center text-[10px] font-bold text-brand-red">
+                    {currentUser?.name ? currentUser.name[0].toUpperCase() : <UserIcon className="w-3 h-3" />}
+                  </div>
+                )}
+                <span className="font-semibold text-xs text-white group-hover:text-brand-red transition-colors hidden sm:inline max-w-[110px] truncate">
+                  {currentUser?.name ? currentUser.name.split(' ')[0] : 'Account'}
+                </span>
+                <ChevronDown className="w-3.5 h-3.5 text-neutral-500 group-hover:text-neutral-300 transition-colors" />
               </button>
 
               {userMenuOpen && (
-                <div className="absolute right-0 mt-2 w-56 rounded-xl bg-[#121212] border border-neutral-800 shadow-2xl p-2 z-50 animate-slide-up">
-                  <div className="px-3 py-2 border-b border-neutral-800 mb-1">
-                    <div className="text-xs font-bold text-white">{currentUser?.name || 'My Account'}</div>
-                    <div className="text-[10px] text-neutral-500 font-mono truncate">{currentUser?.email || 'Active Session'}</div>
+                <div className="absolute right-0 mt-2 w-64 rounded-2xl bg-[#121212] border border-neutral-800 shadow-2xl p-2.5 z-50 animate-slide-up space-y-1.5">
+                  {/* Profile Header */}
+                  <div className="px-3 py-2.5 bg-neutral-950/80 rounded-xl border border-neutral-800/80">
+                    <div className="flex items-center justify-between">
+                      <div className="text-xs font-bold text-white truncate max-w-[140px]">
+                        {currentUser?.name || 'Guest User'}
+                      </div>
+                      <span className="px-1.5 py-0.5 rounded text-[9px] font-mono font-bold bg-brand-red/20 border border-brand-red/40 text-brand-red uppercase">
+                        {currentUser?.role || 'CLIENT'}
+                      </span>
+                    </div>
+                    <div className="text-[11px] text-neutral-500 font-mono truncate pt-0.5">
+                      {currentUser?.email || (currentUser?.username ? `@${currentUser.username}` : 'No active session')}
+                    </div>
                   </div>
 
+                  {/* Navigation Links */}
                   <button
                     onClick={() => {
                       setActivePage('dashboard', 'push-down');
@@ -167,35 +182,50 @@ export const Navbar: React.FC = () => {
                     className="w-full text-left px-3 py-2 rounded-lg text-xs text-neutral-300 hover:text-white hover:bg-neutral-800 flex items-center gap-2 transition-colors"
                   >
                     <Clock className="w-3.5 h-3.5 text-neutral-400" />
-                    <span>Track Order</span>
+                    <span>Track Orders</span>
                   </button>
 
-                  {currentUser?.role === 'ADMIN' && (
-                    <button
-                      onClick={() => {
-                        setActivePage('admin-orders', 'push-down');
-                        setUserMenuOpen(false);
-                      }}
-                      className="w-full text-left px-3 py-2 rounded-lg text-xs text-brand-red hover:text-brand-redBright hover:bg-neutral-800 flex items-center gap-2 transition-colors font-semibold"
-                    >
-                      <Shield className="w-3.5 h-3.5" />
-                      <span>Admin Fulfillment</span>
-                    </button>
-                  )}
+                  {/* Direct Login / Register Link */}
+                  <button
+                    onClick={() => {
+                      setActivePage('login', 'push-down');
+                      setUserMenuOpen(false);
+                    }}
+                    className="w-full text-left px-3 py-2 rounded-lg text-xs text-neutral-300 hover:text-white hover:bg-neutral-800 flex items-center gap-2 transition-colors"
+                  >
+                    <UserIcon className="w-3.5 h-3.5 text-brand-red" />
+                    <span>Sign In / Create Account</span>
+                  </button>
+
+                  {/* Admin Direct Access */}
+                  <button
+                    onClick={() => {
+                      if (currentUser?.role === 'ADMIN') {
+                        setActivePage('admin', 'push-down');
+                      } else {
+                        setActivePage('admin-login', 'push-down');
+                      }
+                      setUserMenuOpen(false);
+                    }}
+                    className="w-full text-left px-3 py-2 rounded-lg text-xs text-brand-red hover:text-brand-redBright hover:bg-neutral-800 flex items-center gap-2 transition-colors font-semibold"
+                  >
+                    <Shield className="w-3.5 h-3.5" />
+                    <span>Admin Staff Portal</span>
+                  </button>
 
                   {/* Role Switcher */}
-                  <div className="border-t border-neutral-800 mt-1 pt-2 px-3 pb-1">
-                    <span className="text-[10px] text-neutral-500 block mb-1 font-mono uppercase">Role:</span>
-                    <div className="flex items-center gap-1">
+                  <div className="border-t border-neutral-800 pt-2 px-1">
+                    <span className="text-[10px] text-neutral-500 block mb-1 font-mono uppercase">Role Preview:</span>
+                    <div className="grid grid-cols-2 gap-1">
                       <button
                         onClick={() => {
                           switchUserRole('CUSTOMER');
                           setUserMenuOpen(false);
                         }}
-                        className={`flex-1 py-1 rounded text-[10px] font-semibold text-center transition-colors ${
+                        className={`py-1 rounded text-[10px] font-semibold text-center transition-colors ${
                           currentUser?.role === 'CUSTOMER'
                             ? 'bg-brand-red text-white'
-                            : 'text-neutral-400 hover:text-white'
+                            : 'text-neutral-400 bg-neutral-900 hover:text-white'
                         }`}
                       >
                         Client
@@ -205,10 +235,10 @@ export const Navbar: React.FC = () => {
                           switchUserRole('ADMIN');
                           setUserMenuOpen(false);
                         }}
-                        className={`flex-1 py-1 rounded text-[10px] font-semibold text-center transition-colors ${
+                        className={`py-1 rounded text-[10px] font-semibold text-center transition-colors ${
                           currentUser?.role === 'ADMIN'
                             ? 'bg-brand-red text-white'
-                            : 'text-neutral-400 hover:text-white'
+                            : 'text-neutral-400 bg-neutral-900 hover:text-white'
                         }`}
                       >
                         Admin
@@ -216,24 +246,17 @@ export const Navbar: React.FC = () => {
                     </div>
                   </div>
 
-                  <div className="border-t border-neutral-800 mt-1 pt-1">
-                    <button
-                      onClick={() => {
-                        setIsAuthModalOpen(true);
-                        setUserMenuOpen(false);
-                      }}
-                      className="w-full text-left px-3 py-1.5 rounded-lg text-xs text-brand-red hover:text-brand-redBright hover:bg-neutral-800/80 transition-colors font-semibold"
-                    >
-                      Auth & Organizations
-                    </button>
+                  {/* Sign Out Button */}
+                  <div className="border-t border-neutral-800 pt-1.5">
                     <button
                       onClick={() => {
                         logout();
                         setUserMenuOpen(false);
                       }}
-                      className="w-full text-left px-3 py-1.5 rounded-lg text-xs text-neutral-400 hover:text-white hover:bg-neutral-800 transition-colors"
+                      className="w-full text-left px-3 py-2 rounded-lg text-xs text-red-400 hover:text-white hover:bg-red-950/40 flex items-center gap-2 transition-colors font-medium"
                     >
-                      Sign Out
+                      <LogOut className="w-3.5 h-3.5" />
+                      <span>Sign Out</span>
                     </button>
                   </div>
                 </div>
