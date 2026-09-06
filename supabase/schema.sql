@@ -1,6 +1,7 @@
 -- ==========================================================
 -- Lion's Den 3D — Production PostgreSQL Schema for Supabase
 -- Run this script in the Supabase SQL Editor (Project -> SQL Editor)
+-- Fully idempotent (safe to run multiple times without error)
 -- ==========================================================
 
 -- 1. Profiles Table (Supports Supabase Auth & Clerk Users with Username & Email)
@@ -16,8 +17,17 @@ CREATE TABLE IF NOT EXISTS public.profiles (
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- Ensure username column exists and email is flexible if table already exists
-ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS username TEXT UNIQUE;
+-- Ensure username column exists and email is flexible if table already existed
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.columns 
+    WHERE table_schema = 'public' AND table_name = 'profiles' AND column_name = 'username'
+  ) THEN
+    ALTER TABLE public.profiles ADD COLUMN username TEXT UNIQUE;
+  END IF;
+END $$;
+
 ALTER TABLE public.profiles ALTER COLUMN email DROP NOT NULL;
 CREATE INDEX IF NOT EXISTS idx_profiles_username ON public.profiles(username);
 
@@ -102,7 +112,6 @@ CREATE TABLE IF NOT EXISTS public.printer_fleet (
 );
 
 -- 6. Storage Buckets Configuration
--- Creates 'stl-models' bucket for customer uploads and shop assets
 INSERT INTO storage.buckets (id, name, public)
 VALUES ('stl-models', 'stl-models', true)
 ON CONFLICT (id) DO NOTHING;
@@ -114,15 +123,39 @@ ALTER TABLE public.products ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.orders ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.printer_fleet ENABLE ROW LEVEL SECURITY;
 
--- Public read access for materials and products
+-- Materials policies (Idempotent: drop before create)
+DROP POLICY IF EXISTS "Public can view active materials" ON public.materials;
 CREATE POLICY "Public can view active materials" ON public.materials FOR SELECT USING (active = true);
+
+-- Products policies
+DROP POLICY IF EXISTS "Public can view products" ON public.products;
 CREATE POLICY "Public can view products" ON public.products FOR SELECT USING (true);
+
+-- Fleet telemetry policies
+DROP POLICY IF EXISTS "Public can view fleet telemetry" ON public.printer_fleet;
 CREATE POLICY "Public can view fleet telemetry" ON public.printer_fleet FOR SELECT USING (true);
 
--- Orders: Customers can view their own orders
+-- Orders policies
+DROP POLICY IF EXISTS "Users can view own orders" ON public.orders;
 CREATE POLICY "Users can view own orders" ON public.orders FOR SELECT USING (true);
+
+DROP POLICY IF EXISTS "Users can create orders" ON public.orders;
 CREATE POLICY "Users can create orders" ON public.orders FOR INSERT WITH CHECK (true);
 
--- Realtime replication setup for orders and printer fleet
-ALTER PUBLICATION supabase_realtime ADD TABLE public.orders;
-ALTER PUBLICATION supabase_realtime ADD TABLE public.printer_fleet;
+-- Realtime replication setup for orders and printer fleet (Idempotent check)
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_publication_tables 
+    WHERE pubname = 'supabase_realtime' AND schemaname = 'public' AND tablename = 'orders'
+  ) THEN
+    ALTER PUBLICATION supabase_realtime ADD TABLE public.orders;
+  END IF;
+
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_publication_tables 
+    WHERE pubname = 'supabase_realtime' AND schemaname = 'public' AND tablename = 'printer_fleet'
+  ) THEN
+    ALTER PUBLICATION supabase_realtime ADD TABLE public.printer_fleet;
+  END IF;
+END $$;
