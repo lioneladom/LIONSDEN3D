@@ -305,27 +305,6 @@ export const ConfiguratorPage: React.FC = () => {
 
   const [isDragging, setIsDragging] = useState(false);
 
-  const handleLoadSample = (sampleKey: string, filename: string) => {
-    try {
-      const geom = ProceduralModelService.generateGeometry(sampleKey);
-      const buffer = ProceduralModelService.geometryToBinarySTL(geom);
-      const { data } = STLParserService.parse(buffer, { x: 300, y: 300, z: 400 }, true);
-
-      const model: STLModel = {
-        id: `model-sample-${Date.now()}`,
-        filename: filename,
-        fileSize: buffer.byteLength,
-        fileBuffer: buffer,
-        geometry: data,
-        createdAt: new Date().toISOString(),
-      };
-
-      loadModelsIntoConfigurator([model]);
-    } catch (err) {
-      console.error('Error loading sample model:', err);
-    }
-  };
-
   const handleFileInput = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files || files.length === 0) return;
@@ -429,48 +408,6 @@ export const ConfiguratorPage: React.FC = () => {
                     className="hidden"
                   />
                 </label>
-
-                {/* Instant 1-Click Sample Testing */}
-                <div className="pt-6 border-t border-neutral-800/80 w-full max-w-md space-y-2.5">
-                  <div className="flex items-center justify-between text-[11px] font-mono text-neutral-400">
-                    <span className="text-amber-400 font-bold flex items-center gap-1">
-                      <Sparkles className="w-3.5 h-3.5" /> Quick Test Samples:
-                    </span>
-                    <span>1-Click Load</span>
-                  </div>
-                  <div className="grid grid-cols-3 gap-2 text-left">
-                    <button
-                      type="button"
-                      onClick={() => handleLoadSample('lion-emblem', 'Lion_Den_Emblem.stl')}
-                      className="p-2.5 rounded-xl bg-neutral-900 hover:bg-neutral-800 border border-neutral-800 hover:border-brand-red/60 transition-all text-left group"
-                    >
-                      <div className="text-[11px] font-bold text-white group-hover:text-brand-red transition-colors truncate">
-                        Lion Head
-                      </div>
-                      <div className="text-[9px] text-neutral-500 font-mono">Sculpture</div>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => handleLoadSample('planetary-gear', 'Planetary_Gearbox.stl')}
-                      className="p-2.5 rounded-xl bg-neutral-900 hover:bg-neutral-800 border border-neutral-800 hover:border-brand-red/60 transition-all text-left group"
-                    >
-                      <div className="text-[11px] font-bold text-white group-hover:text-brand-red transition-colors truncate">
-                        Planetary Gear
-                      </div>
-                      <div className="text-[9px] text-neutral-500 font-mono">Mechanism</div>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => handleLoadSample('lattice-cube', 'Lattice_Stress_Cube.stl')}
-                      className="p-2.5 rounded-xl bg-neutral-900 hover:bg-neutral-800 border border-neutral-800 hover:border-brand-red/60 transition-all text-left group"
-                    >
-                      <div className="text-[11px] font-bold text-white group-hover:text-brand-red transition-colors truncate">
-                        Lattice Cube
-                      </div>
-                      <div className="text-[9px] text-neutral-500 font-mono">Benchmark</div>
-                    </button>
-                  </div>
-                </div>
               </div>
             ) : (
               /* Interactive 3D Canvas */
