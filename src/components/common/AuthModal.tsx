@@ -1,182 +1,239 @@
 import React, { useState } from 'react';
 import { useApp } from '../../context/AppContext';
 import { LionLogo } from './LionLogo';
-import { Lock, Mail, Shield, User, X } from 'lucide-react';
+import { Shield, User, X, LogOut, Building2, Sparkles } from 'lucide-react';
+import {
+  SignIn,
+  SignUp,
+  SignedIn,
+  SignedOut,
+  UserButton,
+  OrganizationSwitcher,
+  useUser,
+  useClerk,
+  useOrganization,
+} from '@clerk/clerk-react';
 
 export const AuthModal: React.FC = () => {
-  const { isAuthModalOpen, setIsAuthModalOpen, login, switchUserRole } = useApp();
-  const [tab, setTab] = useState<'login' | 'register'>('login');
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [name, setName] = useState('');
+  const { isAuthModalOpen, setIsAuthModalOpen, switchUserRole } = useApp();
+  const [authMode, setAuthMode] = useState<'clerk-signin' | 'clerk-signup' | 'demo'>('clerk-signin');
+  const { user: clerkUser, isSignedIn } = useUser();
+  const { signOut } = useClerk();
+  const { organization } = useOrganization();
 
   if (!isAuthModalOpen) return null;
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (email) {
-      login(email, 'CUSTOMER');
-    }
-  };
-
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 overflow-y-auto">
       {/* Backdrop */}
       <div
         onClick={() => setIsAuthModalOpen(false)}
-        className="absolute inset-0 bg-black/80 backdrop-blur-md animate-fade-in"
+        className="fixed inset-0 bg-black/85 backdrop-blur-md animate-fade-in"
       />
 
       {/* Modal Card */}
-      <div className="relative w-full max-w-md bg-brand-surface border border-brand-border rounded-2xl p-6 sm:p-8 shadow-2xl z-10 animate-slide-up space-y-6">
+      <div className="relative w-full max-w-md bg-[#0F0F0F] border border-neutral-800 rounded-2xl p-5 sm:p-7 shadow-2xl z-10 animate-slide-up space-y-5 my-8">
         {/* Close Button */}
         <button
           onClick={() => setIsAuthModalOpen(false)}
-          className="absolute top-4 right-4 p-1.5 rounded-lg bg-brand-card text-brand-textMuted hover:text-white"
+          className="absolute top-4 right-4 p-1.5 rounded-lg bg-neutral-900 text-neutral-400 hover:text-white border border-neutral-800 transition-colors"
+          title="Close Modal"
         >
           <X className="w-5 h-5" />
         </button>
 
-        {/* Logo & Heading */}
-        <div className="text-center space-y-2">
+        {/* Logo & Header */}
+        <div className="text-center space-y-1.5">
           <div className="inline-block">
             <LionLogo size="lg" />
           </div>
-          <h2 className="text-xl font-bold font-display tracking-tight text-white pt-2">
-            {tab === 'login' ? 'Access Your 3D Studio Account' : 'Create Customer Account'}
+          <h2 className="text-lg font-bold font-display tracking-tight text-white pt-1">
+            Lion&apos;s Den 3D Authentication
           </h2>
-          <p className="text-xs text-brand-textDim">
-            Save models, track real-time printer telemetry, and manage quotes.
+          <p className="text-xs text-neutral-400">
+            Sign in with your username, email, or team organization.
           </p>
         </div>
 
-        {/* 1-Click Quick Demo Switcher */}
-        <div className="p-3.5 rounded-xl bg-brand-card border border-brand-red/30 space-y-2.5">
-          <div className="flex items-center justify-between text-[11px] font-mono text-brand-textMuted">
-            <span className="text-brand-redBright font-semibold flex items-center gap-1">
-              ⚡ Quick Demo Switcher:
-            </span>
-            <span>Instant Role Access</span>
-          </div>
+        {/* Signed In State View */}
+        <SignedIn>
+          <div className="p-4 rounded-xl bg-neutral-900/90 border border-neutral-800 space-y-3">
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] font-mono text-neutral-400 uppercase tracking-wider">
+                Active Session
+              </span>
+              <UserButton afterSignOutUrl="/" />
+            </div>
 
-          <div className="grid grid-cols-2 gap-2">
-            <button
-              type="button"
-              onClick={() => {
-                switchUserRole('CUSTOMER');
-                setIsAuthModalOpen(false);
-              }}
-              className="px-3 py-2 rounded-lg bg-brand-surface border border-brand-border hover:border-brand-red/50 text-left transition-all group"
-            >
-              <div className="flex items-center gap-1.5 text-xs font-semibold text-white group-hover:text-brand-red">
-                <User className="w-3.5 h-3.5 text-brand-red" />
-                <span>Kwame Mensah</span>
-              </div>
-              <div className="text-[10px] font-mono text-brand-textDim">Customer Account</div>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => {
-                switchUserRole('ADMIN');
-                setIsAuthModalOpen(false);
-              }}
-              className="px-3 py-2 rounded-lg bg-brand-surface border border-brand-border hover:border-brand-red/50 text-left transition-all group"
-            >
-              <div className="flex items-center gap-1.5 text-xs font-semibold text-white group-hover:text-brand-red">
-                <Shield className="w-3.5 h-3.5 text-brand-red" />
-                <span>Chief Engineer</span>
-              </div>
-              <div className="text-[10px] font-mono text-brand-textDim">Shop Owner Admin</div>
-            </button>
-          </div>
-        </div>
-
-        {/* Tabs */}
-        <div className="grid grid-cols-2 gap-1 p-1 bg-brand-card rounded-lg border border-brand-border text-xs font-semibold">
-          <button
-            type="button"
-            onClick={() => setTab('login')}
-            className={`py-2 rounded-md transition-colors ${
-              tab === 'login' ? 'bg-brand-red text-white' : 'text-brand-textDim hover:text-white'
-            }`}
-          >
-            Sign In
-          </button>
-          <button
-            type="button"
-            onClick={() => setTab('register')}
-            className={`py-2 rounded-md transition-colors ${
-              tab === 'register' ? 'bg-brand-red text-white' : 'text-brand-textDim hover:text-white'
-            }`}
-          >
-            Register
-          </button>
-        </div>
-
-        {/* Form */}
-        <form onSubmit={handleSubmit} className="space-y-4">
-          {tab === 'register' && (
-            <div className="space-y-1">
-              <label className="text-xs font-medium text-brand-textMuted">Full Name</label>
-              <div className="relative">
-                <User className="absolute left-3 top-3 w-4 h-4 text-brand-textDim" />
-                <input
-                  type="text"
-                  required
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  placeholder="e.g. Kwame Mensah"
-                  className="w-full bg-brand-card border border-brand-border rounded-lg pl-9 pr-4 py-2.5 text-sm text-white focus:outline-none focus:border-brand-red font-sans"
+            <div className="flex items-center gap-3 pt-1">
+              {clerkUser?.imageUrl ? (
+                <img
+                  src={clerkUser.imageUrl}
+                  alt={clerkUser.fullName || 'User'}
+                  className="w-10 h-10 rounded-full border border-brand-red/50 object-cover"
                 />
+              ) : (
+                <div className="w-10 h-10 rounded-full bg-brand-red/20 border border-brand-red/40 flex items-center justify-center text-brand-red font-bold">
+                  {clerkUser?.firstName?.[0] || 'U'}
+                </div>
+              )}
+              <div className="flex-1 min-w-0">
+                <div className="text-sm font-bold text-white truncate">
+                  {clerkUser?.fullName || clerkUser?.username || 'Authenticated Member'}
+                </div>
+                <div className="text-xs text-neutral-400 font-mono truncate">
+                  {clerkUser?.primaryEmailAddress?.emailAddress || clerkUser?.username}
+                </div>
               </div>
+            </div>
+
+            {/* Organization Switcher if present */}
+            <div className="pt-2 border-t border-neutral-800 flex items-center justify-between text-xs">
+              <span className="text-neutral-400 flex items-center gap-1">
+                <Building2 className="w-3.5 h-3.5 text-brand-red" />
+                <span>Organization:</span>
+              </span>
+              <OrganizationSwitcher
+                hidePersonal={false}
+                afterCreateOrganizationUrl="/"
+                afterLeaveOrganizationUrl="/"
+                afterSelectOrganizationUrl="/"
+              />
+            </div>
+
+            <div className="pt-2 flex gap-2">
+              <button
+                type="button"
+                onClick={() => {
+                  setIsAuthModalOpen(false);
+                }}
+                className="flex-1 py-2 rounded-lg bg-neutral-800 hover:bg-neutral-700 text-xs font-semibold text-white transition-colors"
+              >
+                Close
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  signOut();
+                  setIsAuthModalOpen(false);
+                }}
+                className="px-3 py-2 rounded-lg bg-red-950/40 hover:bg-red-900/60 border border-brand-red/30 text-xs text-red-400 hover:text-white flex items-center gap-1.5 transition-colors"
+              >
+                <LogOut className="w-3.5 h-3.5" />
+                <span>Sign Out</span>
+              </button>
+            </div>
+          </div>
+        </SignedIn>
+
+        {/* Signed Out Auth Tabs */}
+        <SignedOut>
+          <div className="grid grid-cols-3 gap-1 p-1 bg-neutral-900 rounded-xl border border-neutral-800 text-xs font-semibold">
+            <button
+              type="button"
+              onClick={() => setAuthMode('clerk-signin')}
+              className={`py-2 rounded-lg transition-colors ${
+                authMode === 'clerk-signin'
+                  ? 'bg-brand-red text-white shadow-md'
+                  : 'text-neutral-400 hover:text-white'
+              }`}
+            >
+              Sign In
+            </button>
+            <button
+              type="button"
+              onClick={() => setAuthMode('clerk-signup')}
+              className={`py-2 rounded-lg transition-colors ${
+                authMode === 'clerk-signup'
+                  ? 'bg-brand-red text-white shadow-md'
+                  : 'text-neutral-400 hover:text-white'
+              }`}
+            >
+              Register
+            </button>
+            <button
+              type="button"
+              onClick={() => setAuthMode('demo')}
+              className={`py-2 rounded-lg transition-colors flex items-center justify-center gap-1 ${
+                authMode === 'demo'
+                  ? 'bg-neutral-700 text-white shadow-md'
+                  : 'text-neutral-400 hover:text-white'
+              }`}
+            >
+              <Sparkles className="w-3 h-3 text-amber-400" />
+              <span>Demo</span>
+            </button>
+          </div>
+
+          {/* Clerk Sign In / Sign Up Forms */}
+          {authMode === 'clerk-signin' && (
+            <div className="flex justify-center">
+              <SignIn
+                routing="hash"
+                afterSignInUrl="/"
+                signUpUrl="#sign-up"
+              />
             </div>
           )}
 
-          <div className="space-y-1">
-            <label className="text-xs font-medium text-brand-textMuted">Email Address</label>
-            <div className="relative">
-              <Mail className="absolute left-3 top-3 w-4 h-4 text-brand-textDim" />
-              <input
-                type="email"
-                required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="name@example.com"
-                className="w-full bg-brand-card border border-brand-border rounded-lg pl-9 pr-4 py-2.5 text-sm text-white focus:outline-none focus:border-brand-red font-sans"
+          {authMode === 'clerk-signup' && (
+            <div className="flex justify-center">
+              <SignUp
+                routing="hash"
+                afterSignUpUrl="/"
+                signInUrl="#sign-in"
               />
             </div>
-          </div>
+          )}
 
-          <div className="space-y-1">
-            <div className="flex items-center justify-between">
-              <label className="text-xs font-medium text-brand-textMuted">Password</label>
-              {tab === 'login' && (
-                <a href="#forgot" className="text-[11px] text-brand-red hover:underline">
-                  Forgot Password?
-                </a>
-              )}
-            </div>
-            <div className="relative">
-              <Lock className="absolute left-3 top-3 w-4 h-4 text-brand-textDim" />
-              <input
-                type="password"
-                required
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="••••••••"
-                className="w-full bg-brand-card border border-brand-border rounded-lg pl-9 pr-4 py-2.5 text-sm text-white focus:outline-none focus:border-brand-red font-sans"
-              />
-            </div>
-          </div>
+          {/* Quick Demo Switcher View */}
+          {authMode === 'demo' && (
+            <div className="p-4 rounded-xl bg-neutral-900 border border-neutral-800 space-y-3">
+              <div className="flex items-center justify-between text-xs font-mono text-neutral-400">
+                <span className="text-amber-400 font-bold flex items-center gap-1">
+                  ⚡ 1-Click Instant Demo Role:
+                </span>
+                <span>Pre-filled</span>
+              </div>
 
-          <button
-            type="submit"
-            className="w-full py-3 rounded-lg bg-brand-red hover:bg-brand-redBright text-white font-display font-bold text-xs uppercase tracking-wider shadow-red-glow transition-all"
-          >
-            {tab === 'login' ? 'Sign In' : 'Create Account'}
-          </button>
-        </form>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    switchUserRole('CUSTOMER');
+                    setIsAuthModalOpen(false);
+                  }}
+                  className="p-3 rounded-lg bg-neutral-950 border border-neutral-800 hover:border-brand-red/60 text-left transition-all group"
+                >
+                  <div className="flex items-center gap-1.5 text-xs font-bold text-white group-hover:text-brand-red">
+                    <User className="w-3.5 h-3.5 text-brand-red" />
+                    <span>Kwame Mensah</span>
+                  </div>
+                  <div className="text-[11px] font-mono text-neutral-500 pt-0.5">
+                    Customer Account
+                  </div>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    switchUserRole('ADMIN');
+                    setIsAuthModalOpen(false);
+                  }}
+                  className="p-3 rounded-lg bg-neutral-950 border border-neutral-800 hover:border-brand-red/60 text-left transition-all group"
+                >
+                  <div className="flex items-center gap-1.5 text-xs font-bold text-white group-hover:text-brand-red">
+                    <Shield className="w-3.5 h-3.5 text-brand-red" />
+                    <span>Chief Engineer</span>
+                  </div>
+                  <div className="text-[11px] font-mono text-neutral-500 pt-0.5">
+                    Shop Owner Admin
+                  </div>
+                </button>
+              </div>
+            </div>
+          )}
+        </SignedOut>
       </div>
     </div>
   );

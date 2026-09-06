@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@clerk/clerk-react": "^5.61.3",
+    "@clerk/themes": "^2.4.57",
     "@supabase/supabase-js": "^2.115.0",
     "canvas-confetti": "^1.9.2",
     "clsx": "^2.1.0",

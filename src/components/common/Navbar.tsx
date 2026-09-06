@@ -22,6 +22,8 @@ export const Navbar: React.FC = () => {
     switchUserRole,
     cartCount,
     setIsSearchModalOpen,
+    setIsAuthModalOpen,
+    logout,
   } = useApp();
 
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -200,6 +202,27 @@ export const Navbar: React.FC = () => {
                         Admin
                       </button>
                     </div>
+                  </div>
+
+                  <div className="border-t border-neutral-800 mt-1 pt-1">
+                    <button
+                      onClick={() => {
+                        setIsAuthModalOpen(true);
+                        setUserMenuOpen(false);
+                      }}
+                      className="w-full text-left px-3 py-1.5 rounded-lg text-xs text-brand-red hover:text-brand-redBright hover:bg-neutral-800/80 transition-colors font-semibold"
+                    >
+                      Auth & Organizations
+                    </button>
+                    <button
+                      onClick={() => {
+                        logout();
+                        setUserMenuOpen(false);
+                      }}
+                      className="w-full text-left px-3 py-1.5 rounded-lg text-xs text-neutral-400 hover:text-white hover:bg-neutral-800 transition-colors"
+                    >
+                      Sign Out
+                    </button>
                   </div>
                 </div>
               )}

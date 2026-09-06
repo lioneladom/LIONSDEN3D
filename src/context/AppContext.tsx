@@ -22,6 +22,8 @@ import {
   DEFAULT_PRODUCTS,
   DEFAULT_USERS,
 } from '../data/mockData';
+import { useUser, useClerk, useOrganization } from '@clerk/clerk-react';
+import { supabase } from '../lib/supabase';
 import { PricingEngineService } from '../services/pricing/pricingEngine';
 
 export type PageTransitionType = 'push-down' | 'pull-out';
@@ -157,11 +159,64 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   // Currency
   const [currency, setCurrency] = useState<Currency>('GHS');
 
-  // Auth - starts as Kwame Mensah (Customer)
+  // Auth - starts as Kwame Mensah (Customer) or saved session
   const [currentUser, setCurrentUser] = useState<User | null>(() => {
     const saved = localStorage.getItem('ld3d_user');
     return saved ? JSON.parse(saved) : DEFAULT_USERS[0];
   });
+
+  // Clerk Auth Integration
+  const { user: clerkUser, isSignedIn } = useUser();
+  const { signOut } = useClerk();
+  const { organization } = useOrganization();
+
+  // Sync Clerk authenticated user with App state and Supabase profiles
+  useEffect(() => {
+    if (isSignedIn && clerkUser) {
+      const email = clerkUser.primaryEmailAddress?.emailAddress || '';
+      const username = clerkUser.username || undefined;
+      const role =
+        (clerkUser.publicMetadata?.role as 'CUSTOMER' | 'ADMIN') ||
+        (email.toLowerCase().includes('admin') || username?.toLowerCase().includes('admin')
+          ? 'ADMIN'
+          : 'CUSTOMER');
+
+      const mappedUser: User = {
+        id: clerkUser.id,
+        username: username,
+        name: clerkUser.fullName || username || email.split('@')[0] || 'Lion Customer',
+        email: email,
+        phone: clerkUser.primaryPhoneNumber?.phoneNumber || '',
+        role: role,
+        avatarUrl: clerkUser.imageUrl,
+        createdAt: new Date(clerkUser.createdAt || Date.now()).toISOString(),
+      };
+
+      setCurrentUser(mappedUser);
+      localStorage.setItem('ld3d_user', JSON.stringify(mappedUser));
+
+      // Asynchronously upsert to Supabase profiles table
+      supabase
+        .from('profiles')
+        .upsert({
+          id: clerkUser.id,
+          username: username,
+          email: email || null,
+          name: mappedUser.name,
+          phone: mappedUser.phone,
+          role: role,
+          avatar_url: clerkUser.imageUrl,
+          org_id: organization?.id || null,
+          org_role: organization ? 'org:member' : null,
+          updated_at: new Date().toISOString(),
+        })
+        .then(({ error }) => {
+          if (error) {
+            console.warn('Supabase profile sync note:', error.message);
+          }
+        });
+    }
+  }, [isSignedIn, clerkUser, organization]);
 
   // Materials
   const [materials, setMaterials] = useState<Material[]>(() => {
@@ -280,7 +335,15 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const logout = () => {
+    if (isSignedIn) {
+      try {
+        signOut();
+      } catch (err) {
+        console.warn('Sign out note:', err);
+      }
+    }
     setCurrentUser(null);
+    localStorage.removeItem('ld3d_user');
     if (activePage === 'admin' || activePage === 'dashboard') {
       setActivePage('home');
     }
