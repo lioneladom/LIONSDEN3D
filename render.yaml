@@ -11,3 +11,7 @@ services:
         value: production
       - key: PORT
         value: 10000
+      - key: SUPABASE_URL
+        value: https://bqyorbckugziotglomxc.supabase.co
+      - key: SUPABASE_ANON_KEY
+        value: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJxeW9yYmNrdWd6aW90Z2xvbXhjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODg3MTc0OTgsImV4cCI6MjEwNDI5MzQ5OH0.GI910UYhqPY2YIxgeJ0GTUA20rPY0J_dbkCn6ZBiGN8
