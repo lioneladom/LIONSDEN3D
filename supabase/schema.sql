@@ -12,12 +12,14 @@ CREATE TABLE IF NOT EXISTS public.profiles (
   name TEXT,
   phone TEXT,
   role TEXT NOT NULL DEFAULT 'CUSTOMER' CHECK (role IN ('CUSTOMER', 'ADMIN')),
+  org_id TEXT,
+  org_role TEXT DEFAULT 'org:member',
   avatar_url TEXT,
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- Ensure username column exists and email is flexible if table already existed
+-- Ensure username and org columns exist if table already existed
 DO $$
 BEGIN
   IF NOT EXISTS (
@@ -26,10 +28,32 @@ BEGIN
   ) THEN
     ALTER TABLE public.profiles ADD COLUMN username TEXT UNIQUE;
   END IF;
+
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.columns 
+    WHERE table_schema = 'public' AND table_name = 'profiles' AND column_name = 'org_id'
+  ) THEN
+    ALTER TABLE public.profiles ADD COLUMN org_id TEXT;
+    ALTER TABLE public.profiles ADD COLUMN org_role TEXT DEFAULT 'org:member';
+  END IF;
 END $$;
 
 ALTER TABLE public.profiles ALTER COLUMN email DROP NOT NULL;
 CREATE INDEX IF NOT EXISTS idx_profiles_username ON public.profiles(username);
+CREATE INDEX IF NOT EXISTS idx_profiles_org_id ON public.profiles(org_id);
+
+-- 2. Organizations Table (Clerk Multi-Tenancy / B2B)
+CREATE TABLE IF NOT EXISTS public.organizations (
+  id TEXT PRIMARY KEY,
+  name TEXT NOT NULL,
+  slug TEXT UNIQUE,
+  logo_url TEXT,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+ALTER TABLE public.organizations ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Public can view organizations" ON public.organizations;
+CREATE POLICY "Public can view organizations" ON public.organizations FOR SELECT USING (true);
 
 -- 2. Materials Table
 CREATE TABLE IF NOT EXISTS public.materials (
@@ -92,9 +116,21 @@ CREATE TABLE IF NOT EXISTS public.orders (
   delivery_address JSONB NOT NULL DEFAULT '{}'::jsonb,
   timeline JSONB NOT NULL DEFAULT '[]'::jsonb,
   assigned_printer_id TEXT,
+  org_id TEXT,
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
+
+-- Ensure org_id column exists on orders if table already existed
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.columns 
+    WHERE table_schema = 'public' AND table_name = 'orders' AND column_name = 'org_id'
+  ) THEN
+    ALTER TABLE public.orders ADD COLUMN org_id TEXT;
+  END IF;
+END $$;
 
 -- 5. Printer Fleet Telemetry
 CREATE TABLE IF NOT EXISTS public.printer_fleet (
