@@ -3,10 +3,11 @@
 -- Run this script in the Supabase SQL Editor (Project -> SQL Editor)
 -- ==========================================================
 
--- 1. Profiles Table (Supports Supabase Auth & Clerk Users)
+-- 1. Profiles Table (Supports Supabase Auth & Clerk Users with Username & Email)
 CREATE TABLE IF NOT EXISTS public.profiles (
   id TEXT PRIMARY KEY,
-  email TEXT NOT NULL,
+  username TEXT UNIQUE,
+  email TEXT,
   name TEXT,
   phone TEXT,
   role TEXT NOT NULL DEFAULT 'CUSTOMER' CHECK (role IN ('CUSTOMER', 'ADMIN')),
@@ -14,6 +15,11 @@ CREATE TABLE IF NOT EXISTS public.profiles (
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
+
+-- Ensure username column exists and email is flexible if table already exists
+ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS username TEXT UNIQUE;
+ALTER TABLE public.profiles ALTER COLUMN email DROP NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_profiles_username ON public.profiles(username);
 
 -- 2. Materials Table
 CREATE TABLE IF NOT EXISTS public.materials (
