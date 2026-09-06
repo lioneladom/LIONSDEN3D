@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useApp } from '../context/AppContext';
 import { LionLogo } from '../components/common/LionLogo';
 import { ArrowLeft, Shield } from 'lucide-react';
@@ -7,7 +7,17 @@ import { SignIn, SignUp, SignedIn, SignedOut, UserButton, OrganizationSwitcher, 
 export const LoginPage: React.FC = () => {
   const { setActivePage } = useApp();
   const [authMode, setAuthMode] = useState<'signin' | 'signup'>('signin');
-  const { user: clerkUser } = useUser();
+  const { user: clerkUser, isSignedIn, isLoaded } = useUser();
+
+  // Smooth auto-navigation once authenticated
+  useEffect(() => {
+    if (isLoaded && isSignedIn) {
+      const timer = setTimeout(() => {
+        setActivePage('dashboard', 'push-down');
+      }, 500);
+      return () => clearTimeout(timer);
+    }
+  }, [isLoaded, isSignedIn, setActivePage]);
 
   return (
     <div className="min-h-[calc(100vh-80px)] flex flex-col items-center justify-center py-10 px-4 relative overflow-hidden bg-[#0A0A0A]">

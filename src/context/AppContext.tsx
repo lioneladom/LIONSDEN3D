@@ -182,13 +182,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   });
 
   // Clerk Auth Integration
-  const { user: clerkUser, isSignedIn } = useUser();
+  const { user: clerkUser, isSignedIn, isLoaded } = useUser();
   const { signOut } = useClerk();
   const { organization } = useOrganization();
 
-  // Clear demo session if signed out
+  // Clear demo session if signed out (strictly after Clerk finished loading)
   useEffect(() => {
-    if (!isSignedIn) {
+    if (isLoaded && !isSignedIn) {
       const saved = localStorage.getItem('ld3d_user');
       if (saved) {
         try {
@@ -202,7 +202,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         }
       }
     }
-  }, [isSignedIn]);
+  }, [isLoaded, isSignedIn]);
 
   // Sync Clerk authenticated user with App state and Supabase profiles
   useEffect(() => {
