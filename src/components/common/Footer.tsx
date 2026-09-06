@@ -96,6 +96,22 @@ export const Footer: React.FC = () => {
                   Customer Dashboard
                 </button>
               </li>
+              <li>
+                <button
+                  onClick={() => setActivePage('login')}
+                  className="hover:text-white transition-colors text-left text-brand-red font-medium"
+                >
+                  Customer Sign In
+                </button>
+              </li>
+              <li>
+                <button
+                  onClick={() => setActivePage('admin-login')}
+                  className="hover:text-white transition-colors text-left text-neutral-400 hover:text-brand-red font-mono text-[11px]"
+                >
+                  Admin Staff Portal
+                </button>
+              </li>
             </ul>
           </div>
 

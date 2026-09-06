@@ -21,6 +21,8 @@ import { HowItWorksPage } from './pages/HowItWorksPage';
 import { AboutPage } from './pages/AboutPage';
 import { ContactPage } from './pages/ContactPage';
 import { FaqPage } from './pages/FaqPage';
+import { LoginPage } from './pages/LoginPage';
+import { AdminLoginPage } from './pages/admin/AdminLoginPage';
 
 // Admin Pages
 import { AdminLayout } from './pages/admin/AdminLayout';
@@ -36,6 +38,11 @@ import { AdminAnalytics } from './pages/admin/AdminAnalytics';
 
 export const AppContent: React.FC = () => {
   const { activePage, adminTab, pageTransition } = useApp();
+
+  // If in Admin Login Mode, render dedicated Chief Engineer Terminal
+  if (activePage === 'admin-login') {
+    return <AdminLoginPage />;
+  }
 
   // If in Admin Mode, render the dedicated shop-owner control center
   if (activePage === 'admin' || activePage === 'admin-orders') {
@@ -85,6 +92,7 @@ export const AppContent: React.FC = () => {
           {activePage === 'about' && <AboutPage />}
           {activePage === 'contact' && <ContactPage />}
           {activePage === 'faq' && <FaqPage />}
+          {(activePage === 'login' || activePage === 'signup') && <LoginPage />}
         </div>
       </main>
 

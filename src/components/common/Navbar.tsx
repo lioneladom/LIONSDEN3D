@@ -119,14 +119,26 @@ export const Navbar: React.FC = () => {
               )}
             </button>
 
-            {/* User Account / Profile Icon */}
+            {/* Direct Sign In Button */}
+            <button
+              onClick={() => setActivePage('login', 'push-down')}
+              className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-neutral-900 hover:bg-neutral-800 border border-neutral-800 hover:border-neutral-700 text-xs font-semibold text-neutral-300 hover:text-white transition-all"
+              title="Sign In / Register"
+            >
+              <UserIcon className="w-3.5 h-3.5 text-brand-red" />
+              <span>{currentUser?.name ? currentUser.name.split(' ')[0] : 'Sign In'}</span>
+            </button>
+
+            {/* User Account / Profile Dropdown Trigger */}
             <div className="relative" ref={userMenuRef}>
               <button
                 onClick={() => setUserMenuOpen(!userMenuOpen)}
-                className="text-neutral-400 hover:text-white transition-colors p-1"
-                title="Account"
+                className="text-neutral-400 hover:text-white transition-colors p-1 rounded-lg hover:bg-neutral-800"
+                title="Account Menu"
               >
-                <UserIcon className="w-4 h-4" />
+                <div className="w-6 h-6 rounded-full bg-neutral-800 border border-neutral-700 flex items-center justify-center text-[11px] font-bold text-neutral-300">
+                  {currentUser?.name ? currentUser.name[0].toUpperCase() : 'U'}
+                </div>
               </button>
 
               {userMenuOpen && (
@@ -288,6 +300,16 @@ export const Navbar: React.FC = () => {
           <div className="pt-2 border-t border-neutral-800 flex items-center justify-between">
             <button
               onClick={() => {
+                setActivePage('login', 'push-down');
+                setMobileMenuOpen(false);
+              }}
+              className="text-xs text-neutral-300 hover:text-white flex items-center gap-1.5 font-semibold"
+            >
+              <UserIcon className="w-3.5 h-3.5 text-brand-red" />
+              <span>Sign In / Register</span>
+            </button>
+            <button
+              onClick={() => {
                 setActivePage('dashboard', 'push-down');
                 setMobileMenuOpen(false);
               }}
@@ -295,16 +317,6 @@ export const Navbar: React.FC = () => {
             >
               <LayoutDashboard className="w-3.5 h-3.5 text-brand-red" />
               <span>Dashboard</span>
-            </button>
-            <button
-              onClick={() => {
-                setActivePage('configurator', 'push-down');
-                setMobileMenuOpen(false);
-              }}
-              className="text-xs font-bold text-brand-red hover:text-white flex items-center gap-1"
-            >
-              <Upload className="w-3.5 h-3.5" />
-              <span>Start a Print</span>
             </button>
           </div>
         </div>
