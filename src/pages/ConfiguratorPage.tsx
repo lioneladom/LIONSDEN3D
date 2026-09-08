@@ -46,6 +46,8 @@ export const ConfiguratorPage: React.FC = () => {
     removeModelFromConfigurator,
     resetConfigurator,
     setActivePage,
+    currentUser,
+    setIsAuthModalOpen,
   } = useApp();
 
   const [isQuoteModalOpen, setIsQuoteModalOpen] = useState(false);
@@ -292,7 +294,7 @@ export const ConfiguratorPage: React.FC = () => {
   }));
 
   const [unitSystem, setUnitSystem] = useState<'metric' | 'imperial'>('metric');
-  const [modelDisplayName, setModelDisplayName] = useState(activeModel?.filename || 'Custom_Part.stl');
+  const [modelDisplayName, setModelDisplayName] = useState(activeModel?.filename || 'Upload STL Model');
   const [isRenaming, setIsRenaming] = useState(false);
 
   useEffect(() => {
@@ -308,6 +310,13 @@ export const ConfiguratorPage: React.FC = () => {
   const handleFileInput = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files || files.length === 0) return;
+    
+    if (!currentUser) {
+      setIsAuthModalOpen(true);
+      e.target.value = '';
+      return;
+    }
+
     const addedModels: STLModel[] = [];
     try {
       for (let i = 0; i < files.length; i++) {
@@ -341,6 +350,12 @@ export const ConfiguratorPage: React.FC = () => {
   const handleDrop = async (e: React.DragEvent) => {
     e.preventDefault();
     setIsDragging(false);
+    
+    if (!currentUser) {
+      setIsAuthModalOpen(true);
+      return;
+    }
+
     if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
       const fakeEvent = {
         target: { files: e.dataTransfer.files, value: '' }
@@ -679,15 +694,15 @@ export const ConfiguratorPage: React.FC = () => {
               <div className="flex justify-between text-neutral-400">
                 <span>Printing Cost</span>
                 <span className="text-white font-semibold font-mono">
-                  {formatPrice(assemblyPriceBreakdown.machineCost || 24.5)}
+                  {formatPrice(activeModel ? assemblyPriceBreakdown.machineCost : 0)}
                 </span>
               </div>
               <div className="flex justify-between text-neutral-400">
                 <span>
-                  Material ({assemblyPriceBreakdown.estimatedWeightGrams.toFixed(1)}g)
+                  Material ({activeModel ? assemblyPriceBreakdown.estimatedWeightGrams.toFixed(1) : '0.0'}g)
                 </span>
                 <span className="text-white font-semibold font-mono">
-                  {formatPrice(assemblyPriceBreakdown.materialCost || 4.8)}
+                  {formatPrice(activeModel ? assemblyPriceBreakdown.materialCost : 0)}
                 </span>
               </div>
               <div className="flex justify-between text-neutral-400">
@@ -705,7 +720,7 @@ export const ConfiguratorPage: React.FC = () => {
                 </div>
               </div>
               <div className="text-3xl font-extrabold text-brand-red font-mono">
-                {formatPrice(assemblyPriceBreakdown.total || 29.3)}
+                {formatPrice(activeModel ? assemblyPriceBreakdown.total : 0)}
               </div>
             </div>
 

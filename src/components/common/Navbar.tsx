@@ -32,19 +32,8 @@ export const Navbar: React.FC = () => {
   const { user: clerkUser, isSignedIn } = useUser();
   const { signOut } = useClerk();
 
-  // Instant reactive active user derived from Clerk session with fallback to app state
-  const activeUser = (isSignedIn && clerkUser)
-    ? {
-        id: clerkUser.id,
-        name: clerkUser.fullName || clerkUser.firstName || clerkUser.username || 'Lion Member',
-        firstName: clerkUser.firstName || (clerkUser.fullName ? clerkUser.fullName.split(' ')[0] : 'Member'),
-        email: clerkUser.primaryEmailAddress?.emailAddress || '',
-        username: clerkUser.username || '',
-        avatarUrl: clerkUser.imageUrl,
-        role: ((clerkUser.publicMetadata?.role as 'CUSTOMER' | 'ADMIN') ||
-              (clerkUser.primaryEmailAddress?.emailAddress?.toLowerCase().includes('admin') ? 'ADMIN' : (currentUser?.role || 'CUSTOMER'))),
-      }
-    : currentUser;
+  // Rely directly on currentUser from AppContext which perfectly syncs with Clerk
+  const activeUser = currentUser;
 
   const handleLogout = async () => {
     try {
@@ -168,7 +157,7 @@ export const Navbar: React.FC = () => {
                   </div>
                 )}
                 <span className="font-semibold text-xs text-white group-hover:text-brand-red transition-colors hidden sm:inline max-w-[110px] truncate">
-                  {activeUser ? (activeUser.firstName || activeUser.name.split(' ')[0]) : 'Account'}
+                  {activeUser ? (activeUser.name ? activeUser.name.split(' ')[0] : 'Member') : 'Account'}
                 </span>
                 <ChevronDown className="w-3.5 h-3.5 text-neutral-500 group-hover:text-neutral-300 transition-colors" />
               </button>
