@@ -419,6 +419,12 @@ export const ConfiguratorPage: React.FC = () => {
                     type="file"
                     accept=".stl"
                     multiple
+                    onClick={(e) => {
+                      if (!currentUser) {
+                        e.preventDefault();
+                        setIsAuthModalOpen(true);
+                      }
+                    }}
                     onChange={handleFileInput}
                     className="hidden"
                   />
@@ -455,6 +461,12 @@ export const ConfiguratorPage: React.FC = () => {
                           type="file"
                           accept=".stl"
                           multiple
+                          onClick={(e) => {
+                            if (!currentUser) {
+                              e.preventDefault();
+                              setIsAuthModalOpen(true);
+                            }
+                          }}
                           onChange={handleFileInput}
                           className="hidden"
                         />

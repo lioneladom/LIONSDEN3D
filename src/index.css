@@ -56,6 +56,12 @@
 /* Hide Clerk Development Mode Badges & Watermarks for clean production look */
 .cl-development-badge,
 .cl-internal-b3fm6y,
+.cl-internal-b3al4t,
+.cl-internal-1xhj18k,
+.cl-internal-1k8fzt9,
+.cl-internal-180wb59,
+div[style*="bottom: 12px;"],
+div[style*="bottom: 16px;"],
 [class*="developmentBadge"],
 [class*="cl-development-badge"],
 [data-localization-key="developmentMode"],
