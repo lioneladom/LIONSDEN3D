@@ -151,7 +151,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [adminTab, setAdminTab] = useState<string>('overview');
   const [selectedProductId, setSelectedProductId] = useState<string | null>(null);
   const [selectedOrderId, setSelectedOrderId] = useState<string | null>('ord-10082');
-  const [isAuthModalOpen, setIsAuthModalOpen] = useState<boolean>(false);
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(() => {
+    return (
+      window.location.hash.includes('sso-callback') ||
+      window.location.hash.includes('sign-in') ||
+      window.location.hash.includes('sign-up')
+    );
+  });
   const [isCartDrawerOpen, setIsCartDrawerOpen] = useState<boolean>(false);
   const [isSearchModalOpen, setIsSearchModalOpen] = useState<boolean>(false);
 

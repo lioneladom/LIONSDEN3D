@@ -16,7 +16,9 @@ import {
 
 export const AuthModal: React.FC = () => {
   const { isAuthModalOpen, setIsAuthModalOpen } = useApp();
-  const [authMode, setAuthMode] = useState<'clerk-signin' | 'clerk-signup'>('clerk-signin');
+  const [authMode, setAuthMode] = useState<'clerk-signin' | 'clerk-signup'>(() => {
+    return window.location.hash.includes('sign-up') ? 'clerk-signup' : 'clerk-signin';
+  });
   const { user: clerkUser } = useUser();
   const { signOut } = useClerk();
   const { organization } = useOrganization();
