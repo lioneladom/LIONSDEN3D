@@ -204,17 +204,17 @@ export const LoginPage: React.FC = () => {
 
                 <div className="space-y-1.5">
                   <label className="text-xs font-semibold text-neutral-400 uppercase tracking-wider ml-1">
-                    Email / Username
+                    Email Address
                   </label>
                   <div className="relative">
                     <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-500" />
                     <input
-                      type="text"
+                      type="email"
                       required
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
                       className="w-full bg-neutral-900 border border-neutral-800 rounded-xl py-3 pl-11 pr-4 text-sm text-white placeholder-neutral-500 focus:outline-none focus:border-brand-red/50 focus:ring-1 focus:ring-brand-red/50 transition-all"
-                      placeholder="lioneladom or lionel@example.com"
+                      placeholder="lionel@example.com"
                     />
                   </div>
                 </div>
