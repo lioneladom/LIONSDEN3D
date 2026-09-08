@@ -2,7 +2,7 @@ import { dark } from '@clerk/themes';
 
 export const CLERK_PUBLISHABLE_KEY =
   import.meta.env.VITE_CLERK_PUBLISHABLE_KEY ||
-  'pk_test_Y2FwaXRhbC1waXJhbmhhLTM4MzIuY2xlcmsuYWNjb3VudHMuZGV2JA';
+  'pk_live_Y2xlcmsubGlvbnNkZW4zZC52ZXJjZWwuYXBwJA';
 
 export const clerkTheme = {
   baseTheme: dark,
