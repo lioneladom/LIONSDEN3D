@@ -21,7 +21,6 @@ import {
   DEFAULT_PRINTER_FLEET,
   DEFAULT_PRODUCTS,
 } from '../data/mockData';
-import { useUser, useClerk, useOrganization } from '@clerk/clerk-react';
 import { supabase } from '../lib/supabase';
 import { PricingEngineService } from '../services/pricing/pricingEngine';
 
@@ -187,76 +186,80 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return null;
   });
 
-  // Clerk Auth Integration
-  const { user: clerkUser, isSignedIn, isLoaded } = useUser();
-  const { signOut } = useClerk();
-  const { organization } = useOrganization();
-
-  // Clear demo session if signed out (strictly after Clerk finished loading)
+  // Supabase Auth Integration
   useEffect(() => {
-    if (isLoaded && !isSignedIn) {
+    // Check active session on mount
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      handleAuthSession(session);
+    });
+
+    // Listen for auth changes
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      handleAuthSession(session);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  const handleAuthSession = async (session: any) => {
+    if (!session?.user) {
+      // Don't clear user if it's a mock demo user (for UI preview purposes)
       const saved = localStorage.getItem('ld3d_user');
       if (saved) {
         try {
           const parsed = JSON.parse(saved);
           if (parsed.id === 'usr-customer-1' || parsed.id === 'usr-admin-1') {
-            localStorage.removeItem('ld3d_user');
-            setCurrentUser(null);
+            return;
           }
         } catch {
-          setCurrentUser(null);
+          // ignore
         }
       }
+      setCurrentUser(null);
+      localStorage.removeItem('ld3d_user');
+      return;
     }
-  }, [isLoaded, isSignedIn]);
 
-  // Sync Clerk authenticated user with App state and Supabase profiles
-  useEffect(() => {
-    if (isSignedIn && clerkUser) {
-      const email = clerkUser.primaryEmailAddress?.emailAddress || '';
-      const username = clerkUser.username || undefined;
-      const role =
-        (clerkUser.publicMetadata?.role as 'CUSTOMER' | 'ADMIN') ||
-        (email.toLowerCase().includes('admin') || username?.toLowerCase().includes('admin')
-          ? 'ADMIN'
-          : 'CUSTOMER');
+    const { user: supaUser } = session;
+    const email = supaUser.email || '';
+    const username = supaUser.user_metadata?.username || email.split('@')[0];
+    const role =
+      (supaUser.user_metadata?.role as 'CUSTOMER' | 'ADMIN') ||
+      (email.toLowerCase().includes('admin') ? 'ADMIN' : 'CUSTOMER');
 
-      const mappedUser: User = {
-        id: clerkUser.id,
+    const mappedUser: User = {
+      id: supaUser.id,
+      username: username,
+      name: supaUser.user_metadata?.full_name || username || 'Lion Customer',
+      email: email,
+      phone: supaUser.user_metadata?.phone || '',
+      role: role,
+      avatarUrl: supaUser.user_metadata?.avatar_url,
+      createdAt: new Date(supaUser.created_at || Date.now()).toISOString(),
+    };
+
+    setCurrentUser(mappedUser);
+    localStorage.setItem('ld3d_user', JSON.stringify(mappedUser));
+
+    // Upsert to Supabase profiles table
+    supabase
+      .from('profiles')
+      .upsert({
+        id: supaUser.id,
         username: username,
-        name: clerkUser.fullName || username || email.split('@')[0] || 'Lion Customer',
-        email: email,
-        phone: clerkUser.primaryPhoneNumber?.phoneNumber || '',
+        email: email || null,
+        full_name: mappedUser.name,
+        phone: mappedUser.phone,
         role: role,
-        avatarUrl: clerkUser.imageUrl,
-        createdAt: new Date(clerkUser.createdAt || Date.now()).toISOString(),
-      };
-
-      setCurrentUser(mappedUser);
-      localStorage.setItem('ld3d_user', JSON.stringify(mappedUser));
-
-      // Asynchronously upsert to Supabase profiles table
-      supabase
-        .from('profiles')
-        .upsert({
-          id: clerkUser.id,
-          username: username,
-          email: email || null,
-          name: mappedUser.name,
-          phone: mappedUser.phone,
-          role: role,
-          avatar_url: clerkUser.imageUrl,
-          org_id: organization?.id || null,
-          org_role: organization ? 'org:member' : null,
-          updated_at: new Date().toISOString(),
-        })
-        .then(({ error }) => {
-          if (error) {
-            console.warn('Supabase profile sync note:', error.message);
-          }
-        });
-    }
-  }, [isSignedIn, clerkUser, organization]);
+        avatar_url: mappedUser.avatarUrl,
+        updated_at: new Date().toISOString(),
+      })
+      .then(({ error }) => {
+        if (error) console.warn('Supabase profile sync note:', error.message);
+      });
+  };
 
   // Materials
   const [materials, setMaterials] = useState<Material[]>(() => {
@@ -393,13 +396,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return true;
   };
 
-  const logout = () => {
-    if (isSignedIn) {
-      try {
-        signOut();
-      } catch (err) {
-        console.warn('Sign out note:', err);
-      }
+  const logout = async () => {
+    try {
+      await supabase.auth.signOut();
+    } catch (err) {
+      console.warn('Supabase sign out note:', err);
     }
     setCurrentUser(null);
     localStorage.removeItem('ld3d_user');

@@ -1,7 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useApp } from '../../context/AppContext';
 import { LionLogo } from './LionLogo';
-import { useUser, useClerk } from '@clerk/clerk-react';
 import {
   Lock,
   Menu,
@@ -29,19 +28,11 @@ export const Navbar: React.FC = () => {
     logout,
   } = useApp();
 
-  const { user: clerkUser, isSignedIn } = useUser();
-  const { signOut } = useClerk();
-
-  // Rely directly on currentUser from AppContext which perfectly syncs with Clerk
+  // Rely directly on currentUser from AppContext which perfectly syncs with Supabase
   const activeUser = currentUser;
 
   const handleLogout = async () => {
-    try {
-      await signOut();
-    } catch (e) {
-      console.warn('Clerk signOut error:', e);
-    }
-    logout();
+    await logout();
     setUserMenuOpen(false);
   };
 

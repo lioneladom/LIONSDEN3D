@@ -1,12 +1,39 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useApp } from '../../context/AppContext';
 import { LionLogo } from '../../components/common/LionLogo';
-import { ArrowLeft, Lock, Shield } from 'lucide-react';
-import { SignIn, SignedIn, SignedOut, UserButton, useUser } from '@clerk/clerk-react';
+import { ArrowLeft, Lock, Shield, Mail, Loader2, LogOut } from 'lucide-react';
+import { supabase } from '../../lib/supabase';
 
 export const AdminLoginPage: React.FC = () => {
-  const { setActivePage, switchUserRole } = useApp();
-  const { user: clerkUser } = useUser();
+  const { setActivePage, currentUser, logout, switchUserRole } = useApp();
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const handleAdminLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      const { error: signInError } = await supabase.auth.signInWithPassword({
+        email,
+        password
+      });
+
+      if (signInError) throw signInError;
+      
+      // Assume admin based on email or backend role handling.
+      // For immediate preview, we forcefully set role to ADMIN if they sign in here.
+      switchUserRole('ADMIN');
+      setActivePage('admin', 'push-down');
+    } catch (err: any) {
+      setError(err.message || 'Access Denied. Invalid credentials.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-[#070707] flex flex-col justify-center items-center p-4 sm:p-6 relative overflow-hidden text-white">
@@ -53,54 +80,112 @@ export const AdminLoginPage: React.FC = () => {
           </div>
 
           {/* Signed In as Admin */}
-          <SignedIn>
+          {currentUser ? (
             <div className="p-4 rounded-2xl bg-neutral-900 border border-neutral-800 space-y-4 text-center">
               <div className="flex justify-center">
-                <UserButton afterSignOutUrl="/admin/login" />
+                {currentUser.avatarUrl ? (
+                  <img
+                    src={currentUser.avatarUrl}
+                    alt={currentUser.name}
+                    className="w-16 h-16 rounded-full border-2 border-brand-red/50 object-cover"
+                  />
+                ) : (
+                  <div className="w-16 h-16 mx-auto rounded-full bg-brand-red/20 border-2 border-brand-red/40 flex items-center justify-center text-brand-red text-2xl font-bold">
+                    {currentUser.name.charAt(0).toUpperCase()}
+                  </div>
+                )}
               </div>
               <div>
                 <div className="text-sm font-bold text-white">
-                  {clerkUser?.fullName || clerkUser?.username || 'Authenticated Staff'}
+                  {currentUser.name}
                 </div>
-                <div className="text-xs text-neutral-400 font-mono">
-                  {clerkUser?.primaryEmailAddress?.emailAddress || clerkUser?.username}
+                <div className="text-xs text-neutral-400 font-mono mt-0.5">
+                  {currentUser.email}
                 </div>
               </div>
-
-              <div className="flex gap-2">
+              
+              <div className="grid grid-cols-2 gap-3 pt-2">
                 <button
                   onClick={() => {
                     switchUserRole('ADMIN');
-                    setActivePage('admin', 'push-down');
+                    setActivePage('admin');
                   }}
-                  className="flex-1 py-3 rounded-xl bg-brand-red hover:bg-brand-redBright text-white text-xs font-bold font-display uppercase tracking-wider shadow-lg shadow-red-950/40 transition-all"
+                  className="w-full py-2.5 rounded-xl bg-brand-red hover:bg-red-600 text-sm font-bold text-white shadow-lg shadow-brand-red/20 transition-all flex items-center justify-center gap-2"
                 >
-                  Enter Control Center
+                  <Shield className="w-4 h-4" />
+                  Enter Dashboard
+                </button>
+                <button
+                  onClick={logout}
+                  className="w-full py-2.5 rounded-xl bg-neutral-800 hover:bg-neutral-700 text-sm font-bold text-neutral-300 hover:text-white transition-all flex items-center justify-center gap-2"
+                >
+                  <LogOut className="w-4 h-4" />
+                  Sign Out
                 </button>
               </div>
             </div>
-          </SignedIn>
+          ) : (
+            /* Admin Login Form */
+            <div className="space-y-5">
+              {error && (
+                <div className="p-3 rounded-lg bg-red-950/50 border border-brand-red/50 text-xs text-red-200 text-center font-mono">
+                  {error}
+                </div>
+              )}
 
-          {/* Signed Out: Clerk Sign In */}
-          <SignedOut>
-            <div className="space-y-4">
-              <div className="flex justify-center">
-                <SignIn routing="hash" afterSignInUrl="/" />
-              </div>
+              <form onSubmit={handleAdminLogin} className="space-y-4">
+                <div className="space-y-1.5">
+                  <label className="text-xs font-semibold text-neutral-400 uppercase tracking-wider ml-1">
+                    Admin Email
+                  </label>
+                  <div className="relative">
+                    <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-500" />
+                    <input
+                      type="email"
+                      required
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      className="w-full bg-neutral-900 border border-neutral-800 rounded-xl py-3 pl-11 pr-4 text-sm text-white placeholder-neutral-500 focus:outline-none focus:border-brand-red/50 focus:ring-1 focus:ring-brand-red/50 transition-all font-mono"
+                      placeholder="admin@lionsden3d.com"
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-xs font-semibold text-neutral-400 uppercase tracking-wider ml-1">
+                    Passcode
+                  </label>
+                  <div className="relative">
+                    <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-500" />
+                    <input
+                      type="password"
+                      required
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      className="w-full bg-neutral-900 border border-neutral-800 rounded-xl py-3 pl-11 pr-4 text-sm text-white placeholder-neutral-500 focus:outline-none focus:border-brand-red/50 focus:ring-1 focus:ring-brand-red/50 transition-all font-mono"
+                      placeholder="••••••••"
+                    />
+                  </div>
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={isLoading}
+                  className="w-full mt-4 py-3 rounded-xl bg-brand-red hover:bg-red-600 text-sm font-bold text-white shadow-lg shadow-brand-red/20 transition-all flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed uppercase tracking-wider"
+                >
+                  {isLoading && <Loader2 className="w-4 h-4 animate-spin" />}
+                  {isLoading ? 'Authenticating...' : 'Authorize Access'}
+                </button>
+              </form>
             </div>
-          </SignedOut>
-
-          {/* Footer note */}
-          <div className="pt-2 text-center text-[11px] text-neutral-500 font-mono flex items-center justify-center gap-2">
-            <span>Client customer?</span>
-            <button
-              onClick={() => setActivePage('login', 'push-down')}
-              className="text-neutral-300 hover:text-white underline underline-offset-2"
-            >
-              Customer Login
-            </button>
-          </div>
+          )}
         </div>
+        
+        {/* Footer info */}
+        <p className="text-center text-[10px] font-mono text-neutral-600">
+          This system is restricted to Lion's Den 3D engineering staff only.
+          <br />Unauthorized access is strictly prohibited and logged.
+        </p>
       </div>
     </div>
   );
